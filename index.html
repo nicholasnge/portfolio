@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">Portfolio</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #21262d;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #7d8590;
+  --green:    #3fb950;
+  --red:      #f85149;
+  --blue:     #58a6ff;
+  --yellow:   #d29922;
+  --purple:   #bc8cff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── Header ──────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.hd-left h1 { font-size: 18px; font-weight: 600; }
+.hd-left .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.hd-right { display: flex; gap: 8px; align-items: center; }
+
+/* ── Buttons ─────────────────────────────────────── */
+button {
+  cursor: pointer; border: none; font-family: inherit;
+  font-size: 13px; border-radius: 6px; padding: 7px 14px; transition: all 0.15s;
+}
+.btn-primary { background: var(--blue); color: #000; font-weight: 600; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-icon { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 6px 10px; }
+.btn-icon:hover { color: var(--text); background: var(--surface2); }
+.btn-ghost { background: transparent; border: 1px solid transparent; padding: 4px 8px; font-size: 12px; }
+.btn-danger { color: var(--red); }
+.btn-danger:hover { border-color: var(--red); background: rgba(248,81,73,0.1); }
+.btn-edit { color: var(--muted); }
+.btn-edit:hover { border-color: var(--border); color: var(--text); background: var(--surface2); }
+
+/* ── Main ────────────────────────────────────────── */
+main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+/* ── Banner ──────────────────────────────────────── */
+.banner {
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.25);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.banner p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.banner a { color: var(--blue); }
+
+/* ── Summary Cards ───────────────────────────────── */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+.card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.card-value { font-size: 22px; font-weight: 700; }
+.card-sub { font-size: 12px; margin-top: 4px; }
+
+.pos { color: var(--green); }
+.neg { color: var(--red); }
+.neu { color: var(--muted); }
+
+/* ── Charts ──────────────────────────────────────── */
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+@media (max-width: 680px) { .charts { grid-template-columns: 1fr; } }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; }
+.chart-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+.chart-wrap { position: relative; height: 200px; }
+
+/* ── Positions ───────────────────────────────────── */
+.pos-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.pos-title { font-size: 16px; font-weight: 600; }
+
+/* ── Add Form ────────────────────────────────────── */
+.add-form {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 18px; margin-bottom: 18px; display: none;
+}
+.add-form.open { display: block; }
+.form-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+
+.type-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+.tab-btn {
+  padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
+  cursor: pointer;
+}
+.tab-btn.active { background: var(--blue); color: #000; border-color: var(--blue); }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.fg { display: flex; flex-direction: column; gap: 5px; }
+.fg label { font-size: 11px; color: var(--muted); font-weight: 500; }
+.fg input, .fg select {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px 10px; color: var(--text); font-family: inherit; font-size: 13px;
+}
+.fg input:focus, .fg select:focus { outline: none; border-color: var(--blue); }
+.fg select option { background: var(--surface2); }
+.occ-preview { font-size: 11px; color: var(--muted); margin-bottom: 12px; font-family: monospace; }
+.occ-preview span { color: var(--blue); }
+.form-actions { display: flex; gap: 8px; }
+
+/* ── Table ───────────────────────────────────────── */
+.tbl-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 680px; }
+thead th {
+  background: var(--surface2); padding: 10px 14px;
+  text-align: right; font-size: 11px; font-weight: 600;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 12px 14px; text-align: right; vertical-align: middle; }
+tbody td:first-child { text-align: left; }
+
+.sym { font-weight: 700; font-size: 14px; color: var(--blue); }
+.sym-name { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.badge {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 4px; letter-spacing: 0.3px; margin-left: 6px;
+}
+.badge-call  { background: rgba(63,185,80,0.15);   color: var(--green); }
+.badge-put   { background: rgba(248,81,73,0.15);   color: var(--red); }
+.badge-exp   { background: rgba(125,133,144,0.15); color: var(--muted); }
+.badge-short { background: rgba(210,153,34,0.15);  color: var(--yellow); }
+
+.action-cell { display: flex; gap: 4px; justify-content: flex-end; }
+.loading { color: var(--muted); font-style: italic; font-size: 12px; }
+.err     { color: var(--red);  font-size: 11px; }
+
+/* ── Empty State ─────────────────────────────────── */
+.empty { text-align: center; padding: 48px 24px; }
+.empty-icon { font-size: 36px; }
+.empty strong { display: block; margin-top: 10px; font-size: 15px; }
+.empty p { color: var(--muted); margin-top: 6px; font-size: 13px; }
+
+/* ── Modal ───────────────────────────────────────── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; width: 480px; max-width: 94vw; max-height: 90vh; overflow-y: auto;
+}
+.modal h2 { font-size: 17px; margin-bottom: 4px; }
+.modal .mdesc { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 18px; }
+.modal a { color: var(--blue); }
+.modal-section { margin-bottom: 18px; }
+.modal-section-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 10px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.code-box {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 12px; font-family: monospace; font-size: 12px; color: var(--muted);
+  line-height: 1.7; white-space: pre-wrap;
+}
+
+/* ── Save status ─────────────────────────────────── */
+#save-status { font-size: 12px; transition: opacity 0.5s; }
+.status-ok  { color: var(--green); }
+.status-err { color: var(--red); }
+
+/* ── Spin ────────────────────────────────────────── */
+.spin { display: inline-block; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Performance Snapshot ────────────────────────── */
+.perf-snap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.perf-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; position: relative; overflow: hidden;
+}
+.perf-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.perf-card.accent-green::before { background: var(--green); }
+.perf-card.accent-blue::before  { background: var(--blue); }
+.perf-card.accent-yellow::before{ background: var(--yellow); }
+.perf-card.accent-purple::before{ background: var(--purple); }
+.perf-card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.perf-card-main  { font-size: 20px; font-weight: 700; }
+.perf-card-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+.perf-card-sub .bench { color: var(--text); }
+
+/* ── History Charts ──────────────────────────────── */
+.history-charts {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;
+}
+@media (max-width: 880px) { .history-charts { grid-template-columns: 1fr; } }
+.history-chart-wrap { position: relative; height: 240px; }
+
+/* ── Closed Trades ───────────────────────────────── */
+.section-header { display: flex; align-items: baseline; gap: 10px; margin: 28px 0 14px; }
+.section-title  { font-size: 16px; font-weight: 600; }
+.section-sub    { font-size: 12px; color: var(--muted); }
+.pnl-highlight  { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────── -->
+<header>
+  <div class="hd-left">
+    <h1 id="hd-title">Portfolio</h1>
+    <div class="sub" id="hd-sub">Not yet refreshed</div>
+  </div>
+  <div class="hd-right">
+    <span id="save-status"></span>
+    <button class="btn-icon" id="refresh-btn" title="Refresh prices">↻</button>
+    <button class="btn-icon" id="edit-btn" title="Toggle edit mode" style="display:none">✎ Edit</button>
+    <button class="btn-secondary" id="settings-btn">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- Setup banner -->
+  <div class="banner" id="setup-banner" style="display:none">
+    <p>
+      <strong style="color:var(--text)">Connect to GitHub to sync positions across devices.</strong><br>
+      Click <strong>⚙ Settings</strong> to enter your GitHub repo and a Personal Access Token.
+      Anyone with the link can view; only you (with the token) can edit.
+    </p>
+    <button class="btn-primary" onclick="openSettings()">Set Up</button>
+  </div>
+
+  <!-- Performance Snapshot -->
+  <div class="perf-snap" id="perf-snap">
+    <div class="perf-card accent-green">
+      <div class="perf-card-label">Since Inception (Jan 2024)</div>
+      <div class="perf-card-main pos">+165.58%</div>
+      <div class="perf-card-sub">vs <span class="bench">SPXTR +44.66%</span> · EFA +47.06% · VT +47.47%</div>
+    </div>
+    <div class="perf-card accent-blue">
+      <div class="perf-card-label">1 Year Return</div>
+      <div class="perf-card-main pos">+69.69%</div>
+      <div class="perf-card-sub">vs <span class="bench">SPXTR +17.05%</span> · EFA +31.15% · VT +24.27%</div>
+    </div>
+    <div class="perf-card accent-yellow">
+      <div class="perf-card-label">Total Realized P&amp;L</div>
+      <div class="perf-card-main pos">+$20,574</div>
+      <div class="perf-card-sub">7 closed trades · USD</div>
+    </div>
+    <div class="perf-card accent-purple">
+      <div class="perf-card-label">Best Month</div>
+      <div class="perf-card-main pos">+18.98%</div>
+      <div class="perf-card-sub">May 2025 · vs SPXTR +6.29%</div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Portfolio Value</div>
+      <div class="card-value" id="c-value">—</div>
+      <div class="card-sub neu" id="c-cost"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total P&amp;L</div>
+      <div class="card-value" id="c-pnl">—</div>
+      <div class="card-sub" id="c-pnl-pct"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Day&apos;s P&amp;L</div>
+      <div class="card-value" id="c-day">—</div>
+      <div class="card-sub" id="c-day-pct"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Positions</div>
+      <div class="card-value" id="c-count">0</div>
+      <div class="card-sub neu" id="c-count-sub">—</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts" id="charts" style="display:none">
+    <div class="chart-card">
+      <div class="chart-label">Allocation</div>
+      <div class="chart-wrap"><canvas id="alloc-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">P&amp;L by Position</div>
+      <div class="chart-wrap"><canvas id="pnl-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- History Charts -->
+  <div class="history-charts">
+    <div class="chart-card">
+      <div class="chart-label">Portfolio Value (SGD)</div>
+      <div class="history-chart-wrap"><canvas id="nav-chart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">Performance vs Benchmarks (Indexed, Jan 2024 = 100)</div>
+      <div class="history-chart-wrap"><canvas id="perf-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Positions header -->
+  <div class="pos-header">
+    <div class="pos-title">Positions</div>
+    <button class="btn-primary" id="add-btn" style="display:none">+ Add Position</button>
+  </div>
+
+  <!-- Add / Edit Form -->
+  <div class="add-form" id="add-form">
+    <div class="form-title" id="form-title">Add Position</div>
+
+    <!-- Type tabs -->
+    <div class="type-tabs">
+      <button class="tab-btn active" id="tab-stock" onclick="switchTab('stock')">Stock / ETF</button>
+      <button class="tab-btn" id="tab-option" onclick="switchTab('option')">Option</button>
+    </div>
+
+    <!-- Stock fields -->
+    <div id="fields-stock">
+      <div class="form-grid">
+        <div class="fg">
+          <label>Ticker *</label>
+          <input id="s-ticker" placeholder="AAPL" autocomplete="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div class="fg">
+          <label>Name</label>
+          <input id="s-name" placeholder="Apple Inc.">
+        </div>
+        <div class="fg">
+          <label>Shares *</label>
+          <input id="s-shares" type="number" placeholder="10" step="any" min="0">
+        </div>
+        <div class="fg">
+          <label>Avg Cost / Share *</label>
+          <input id="s-cost" type="number" placeholder="150.00" step="any" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Option fields -->
+    <div id="fields-option" style="display:none">
+      <div class="form-grid">
+        <div class="fg">
+          <label>Underlying *</label>
+          <input id="o-underlying" placeholder="AAPL" autocomplete="off" spellcheck="false"
+                 oninput="this.value=this.value.toUpperCase(); buildOCCPreview()">
+        </div>
+        <div class="fg">
+          <label>Type *</label>
+          <select id="o-type" onchange="buildOCCPreview()">
+            <option value="C">Call</option>
+            <option value="P">Put</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>Strike *</label>
+          <input id="o-strike" type="number" placeholder="150.00" step="any" min="0" oninput="buildOCCPreview()">
+        </div>
+        <div class="fg">
+          <label>Expiry *</label>
+          <input id="o-expiry" type="date" oninput="buildOCCPreview()">
+        </div>
+        <div class="fg">
+          <label>Contracts * <span style="font-weight:400;color:var(--muted)">(negative = short)</span></label>
+          <input id="o-contracts" type="number" placeholder="-4 or 2" step="1">
+        </div>
+        <div class="fg">
+          <label>Avg Premium / Share *</label>
+          <input id="o-cost" type="number" placeholder="5.50" step="any" min="0">
+        </div>
+      </div>
+      <div class="occ-preview" id="occ-preview">OCC symbol: <span>—</span></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" id="save-pos-btn">Save</button>
+      <button class="btn-secondary" id="cancel-pos-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th>Qty</th>
+          <th>Avg Cost</th>
+          <th>Price</th>
+          <th>Value</th>
+          <th>P&amp;L</th>
+          <th>P&amp;L %</th>
+          <th>Day</th>
+          <th>Weight</th>
+          <th id="th-actions" style="display:none"></th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Closed Trades -->
+  <div class="section-header">
+    <div class="section-title">Closed Trades</div>
+    <div class="section-sub" id="closed-sub"></div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Position</th>
+          <th>Qty</th>
+          <th>Avg Cost</th>
+          <th>Close Price</th>
+          <th>Realized P&amp;L</th>
+          <th>P&amp;L %</th>
+          <th>Closed</th>
+        </tr>
+      </thead>
+      <tbody id="closed-body"></tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- ── Settings Modal ──────────────────────────────────────────────── -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p class="mdesc">
+      Portfolio data is stored as <code>data.json</code> in your GitHub repo and served via
+      GitHub Pages. Anyone with the link can view; only devices with your Personal Access Token
+      can edit.
+    </p>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Display</div>
+      <div class="fg">
+        <label>Portfolio Name</label>
+        <input id="cfg-name" placeholder="My Portfolio">
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">GitHub</div>
+      <div class="modal-grid">
+        <div class="fg">
+          <label>Username</label>
+          <input id="cfg-user" placeholder="your-username" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="fg">
+          <label>Repository</label>
+          <input id="cfg-repo" placeholder="portfolio" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="fg">
+          <label>Branch</label>
+          <input id="cfg-branch" placeholder="main" autocomplete="off">
+        </div>
+        <div class="fg">
+          <label>
+            Personal Access Token
+            <a href="https://github.com/settings/tokens?type=beta" target="_blank" style="margin-left:6px">create →</a>
+          </label>
+          <input id="cfg-token" type="password" placeholder="github_pat_…" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <p style="font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6">
+        When creating the token: select your repo under <em>Repository access</em>,
+        then grant <strong>Contents → Read &amp; Write</strong>.
+        The token is only stored in your browser's localStorage and never sent anywhere except GitHub.
+      </p>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Deploy to GitHub Pages</div>
+      <div class="code-box" id="deploy-steps">1. Create a public GitHub repo (e.g. "portfolio")
+2. Upload index.html to the repo root
+3. Settings → Pages → Source: Deploy from branch main / root → Save
+4. Your public URL: https://&lt;username&gt;.github.io/&lt;repo&gt;/
+5. Enter your GitHub username, repo, and PAT above
+6. Add positions — first save creates data.json automatically</div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" id="save-cfg-btn">Save</button>
+      <button class="btn-secondary" id="close-cfg-btn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// Config (localStorage)
+// ═══════════════════════════════════════════════════════════════════
+const cfg = {
+  name:   () => localStorage.getItem('p_name')   || 'Portfolio',
+  user:   () => localStorage.getItem('p_ghuser')  || '',
+  repo:   () => localStorage.getItem('p_ghrepo')  || '',
+  branch: () => localStorage.getItem('p_ghbranch')|| 'main',
+  token:  () => localStorage.getItem('p_ghtoken') || '',
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════
+let positions  = [];
+let cache      = {};   // ticker → { q: quoteObj, ts: timestamp }
+let editMode   = false;
+let editingId  = null;
+let formTab    = 'stock';
+let allocChart   = null;
+let pnlBarChart  = null;
+let navLineChart = null;
+let perfLineChart= null;
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ═══════════════════════════════════════════════════════════════════
+// Hard-coded seed data (from IBKR statements)
+// ═══════════════════════════════════════════════════════════════════
+const SEED_POSITIONS = [
+  { id:'seed1', type:'stock',  ticker:'META',  name:'Meta Platforms',  shares:71.9,  avgCost:657.90 },
+  { id:'seed2', type:'stock',  ticker:'NFLX',  name:'Netflix Inc.',    shares:200,   avgCost:83.18 },
+  { id:'seed3', type:'option', ticker:'META260821P00600000',
+    underlying:'META', optionType:'P', strike:600, expiry:'2026-08-21', contracts:-1, avgCost:42.75 },
+  { id:'seed4', type:'option', ticker:'ORCL260313P00130000',
+    underlying:'ORCL', optionType:'P', strike:130, expiry:'2026-03-13', contracts:-2, avgCost:4.24 },
+];
+
+const CLOSED_TRADES = [
+  { ticker:'NVDA',      name:'NVIDIA Corp',                     type:'stock',  qty:136,   avgCost:124.01, closePrice:188.75, pnl:8803.79,  pnlPct:52.2,  closedAt:'Oct 2025' },
+  { ticker:'IMAX',      name:'IMAX Corp',                       type:'stock',  qty:1174,  avgCost:31.34,  closePrice:37.40,  pnl:7101.40,  pnlPct:19.3,  closedAt:'Dec 2025' },
+  { ticker:'IBKR',      name:'Interactive Brokers (incl. grants)', type:'stock', qty:95.49, avgCost:45.04, closePrice:72.08, pnl:2529.24, pnlPct:58.8, closedAt:'Mar 2025' },
+  { ticker:'VOO',       name:'Vanguard S&P 500 ETF',            type:'stock',  qty:8.02,  avgCost:464.56, closePrice:636.89, pnl:1382.53,  pnlPct:37.1,  closedAt:'Sep 2025' },
+  { ticker:'ADBE 250P', name:'Adobe $250 Put — 2 contracts short', type:'option', qty:2,  avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  closedAt:'Jan 2025' },
+  { ticker:'DUOL 135C', name:'Duolingo $135 Call — short, expired', type:'option', qty:1, avgCost:2.53,  closePrice:0,      pnl:252.73,   pnlPct:99.9,  closedAt:'Jun 2024' },
+  { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',   type:'option', qty:1, avgCost:1.16,  closePrice:0,      pnl:114.85,   pnlPct:99.0,  closedAt:'Sep 2024' },
+];
+
+// Monthly NAV in SGD — from IBKR Allocation by Asset Class
+const MONTHLY_NAV = [
+  {l:'Jan 2024',n:5001},{l:'Feb 2024',n:10124},{l:'Mar 2024',n:14278},{l:'Apr 2024',n:15722},
+  {l:'May 2024',n:19514},{l:'Jun 2024',n:25555},{l:'Jul 2024',n:28546},{l:'Aug 2024',n:28884},
+  {l:'Sep 2024',n:29726},{l:'Oct 2024',n:31319},{l:'Nov 2024',n:35436},{l:'Dec 2024',n:36544},
+  {l:'Jan 2025',n:28587},{l:'Feb 2025',n:29226},{l:'Mar 2025',n:30837},{l:'Apr 2025',n:30253},
+  {l:'May 2025',n:35995},{l:'Jun 2025',n:40052},{l:'Jul 2025',n:45797},{l:'Aug 2025',n:44365},
+  {l:'Sep 2025',n:47781},{l:'Oct 2025',n:56361},{l:'Nov 2025',n:63178},{l:'Dec 2025',n:62997},
+  {l:'Jan 2026',n:72172},{l:'Feb 2026',n:74672},{l:'Mar 2026*',n:76354},
+];
+
+// Cumulative TWR index (100 = Jan 2024) — computed from IBKR monthly returns
+// Account vs SPXTR / EFA / VT benchmarks
+const PERF_INDEX = [
+  {l:'Jan 2024', a:100.00,s:100.00,e:100.00,v:100.00},
+  {l:'Feb 2024', a:99.48, s:105.34,e:102.99,v:104.49},
+  {l:'Mar 2024', a:102.68,s:108.73,e:106.47,v:107.83},
+  {l:'Apr 2024', a:102.25,s:104.29,e:103.02,v:103.96},
+  {l:'May 2024', a:107.70,s:109.46,e:108.23,v:108.74},
+  {l:'Jun 2024', a:116.12,s:113.39,e:106.27,v:110.46},
+  {l:'Jul 2024', a:112.37,s:114.77,e:109.02,v:112.65},
+  {l:'Aug 2024', a:113.70,s:117.55,e:112.58,v:115.28},
+  {l:'Sep 2024', a:117.01,s:120.06,e:113.46,v:117.82},
+  {l:'Oct 2024', a:123.28,s:118.97,e:107.48,v:115.25},
+  {l:'Nov 2024', a:139.48,s:125.95,e:107.14,v:120.02},
+  {l:'Dec 2024', a:143.84,s:122.95,e:103.98,v:116.49},
+  {l:'Jan 2025', a:153.09,s:126.38,e:108.97,v:120.05},
+  {l:'Feb 2025', a:156.51,s:124.73,e:112.19,v:119.55},
+  {l:'Mar 2025', a:137.01,s:117.70,e:112.40,v:115.35},
+  {l:'Apr 2025', a:134.42,s:116.90,e:116.55,v:115.99},
+  {l:'May 2025', a:159.95,s:124.26,e:122.13,v:122.73},
+  {l:'Jun 2025', a:178.01,s:130.58,e:125.05,v:128.47},
+  {l:'Jul 2025', a:203.54,s:133.51,e:122.43,v:129.88},
+  {l:'Aug 2025', a:197.18,s:136.22,e:127.97,v:133.71},
+  {l:'Sep 2025', a:212.37,s:141.19,e:130.61,v:138.22},
+  {l:'Oct 2025', a:225.14,s:144.49,e:132.18,v:141.02},
+  {l:'Nov 2025', a:252.37,s:144.84,e:133.16,v:141.32},
+  {l:'Dec 2025', a:251.64,s:144.93,e:136.78,v:142.61},
+  {l:'Jan 2026', a:268.90,s:147.03,e:143.49,v:147.05},
+  {l:'Feb 2026', a:259.81,s:145.91,e:150.10,v:149.47},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// GitHub persistence
+// ═══════════════════════════════════════════════════════════════════
+async function ghLoad() {
+  const { user, repo, branch } = { user: cfg.user(), repo: cfg.repo(), branch: cfg.branch() };
+  if (!user || !repo) return null;
+  try {
+    const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?ref=${branch}`;
+    const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+    if (res.status === 404) return { positions: [] };
+    if (!res.ok) return null;
+    const j = await res.json();
+    return JSON.parse(atob(j.content.replace(/\n/g, '')));
+  } catch { return null; }
+}
+
+async function ghSave(data) {
+  const token = cfg.token();
+  if (!token) return { ok: false, error: 'No token' };
+  const url = `https://api.github.com/repos/${cfg.user()}/${cfg.repo()}/contents/data.json`;
+  try {
+    // Get SHA of existing file (undefined → create new)
+    let sha;
+    const get = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    if (get.ok) sha = (await get.json()).sha;
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const body = { message: 'chore: update portfolio', content, branch: cfg.branch() };
+    if (sha) body.sha = sha;
+
+    const put = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return { ok: put.ok, status: put.status };
+  } catch (e) { return { ok: false, error: e.message }; }
+}
+
+// localStorage mirror
+const lsSave = d => localStorage.setItem('p_data', JSON.stringify(d));
+const lsLoad = () => JSON.parse(localStorage.getItem('p_data') || '{"positions":[]}');
+
+async function persistPositions() {
+  const data = { positions, updatedAt: new Date().toISOString() };
+  lsSave(data);
+
+  if (!cfg.user() || !cfg.repo()) {
+    showStatus('Saved locally', 'ok');
+    return;
+  }
+  if (!cfg.token()) {
+    showStatus('No token — saved locally only', 'err');
+    return;
+  }
+
+  showStatus('Saving…', '');
+  const r = await ghSave(data);
+  r.ok ? showStatus('Saved to GitHub ✓', 'ok') : showStatus(`Save failed (${r.status || r.error})`, 'err');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Yahoo Finance live data
+// ═══════════════════════════════════════════════════════════════════
+
+// Yahoo Finance now requires a crumb token (tied to your browser's Yahoo cookie).
+// We fetch it once and cache it for 30 minutes.
+let _crumb = null, _crumbTs = 0;
+
+async function fetchCrumb() {
+  if (_crumb && Date.now() - _crumbTs < 30 * 60 * 1000) return _crumb;
+
+  const crumbUrl = 'https://query2.finance.yahoo.com/v1/test/getcrumb';
+  const attempts = [
+    crumbUrl,                                                         // direct (uses browser Yahoo cookie)
+    `https://corsproxy.io/?${encodeURIComponent(crumbUrl)}`,         // via proxy
+  ];
+
+  for (const url of attempts) {
+    try {
+      const res  = await fetch(url);
+      if (!res.ok) continue;
+      const text = (await res.text()).trim();
+      // Valid crumb: short string, not HTML, not "null"
+      if (text && text !== 'null' && !text.startsWith('<') && text.length < 60) {
+        _crumb  = text;
+        _crumbTs = Date.now();
+        return _crumb;
+      }
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
+async function fetchQuotes(symbols) {
+  if (!symbols.length) return [];
+  const syms = symbols.map(encodeURIComponent).join(',');
+
+  const crumb     = await fetchCrumb();
+  const crumbStr  = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
+  const base      = `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${syms}&lang=en-US${crumbStr}`;
+  const proxied   = `https://corsproxy.io/?${encodeURIComponent(base)}`;
+
+  for (const url of [base, proxied]) {
+    try {
+      const res  = await fetch(url);
+      if (!res.ok) continue;
+      const json = await res.json();
+      const rows = json?.quoteResponse?.result;
+      if (Array.isArray(rows) && rows.length) return rows;
+    } catch { /* try next */ }
+  }
+  return [];
+}
+
+async function refreshPrices() {
+  if (!positions.length) return;
+  setRefreshing(true);
+
+  // Batch fetch all symbols
+  const syms = [...new Set(positions.map(p => p.ticker))];
+  const rows = await fetchQuotes(syms);
+
+  // Populate cache
+  for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
+
+  // Mark any symbol that came back with 0 price as invalid
+  for (const sym of syms) {
+    if (cache[sym]?.q?.regularMarketPrice === 0 && cache[sym]?.q?.regularMarketPreviousClose === 0) {
+      cache[sym] = { q: null, ts: Date.now() };
+    }
+  }
+
+  document.getElementById('hd-sub').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  setRefreshing(false);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Option utilities
+// ═══════════════════════════════════════════════════════════════════
+function buildOCC(underlying, expiryStr, type, strike) {
+  if (!underlying || !expiryStr || !type || !strike) return '';
+  const d  = new Date(expiryStr + 'T00:00:00');
+  const yy = String(d.getFullYear()).slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const s  = String(Math.round(parseFloat(strike) * 1000)).padStart(8, '0');
+  return `${underlying.toUpperCase()}${yy}${mm}${dd}${type}${s}`;
+}
+
+function optionLabel(pos) {
+  if (pos.type !== 'option') return '';
+  const d = new Date(pos.expiry + 'T00:00:00');
+  const mo = d.toLocaleString('en-US', { month: 'short' });
+  const dy = d.getDate();
+  const yr = String(d.getFullYear()).slice(2);
+  const dir = pos.optionType === 'C' ? 'Call' : 'Put';
+  return `${pos.underlying} $${fmtNum(pos.strike)} ${dir} · ${mo} ${dy} '${yr}`;
+}
+
+function isExpired(pos) {
+  if (pos.type !== 'option') return false;
+  return new Date(pos.expiry + 'T00:00:00') < new Date();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Math
+// ═══════════════════════════════════════════════════════════════════
+function multiplier(pos) { return pos.type === 'option' ? 100 : 1; }
+function qty(pos)         { return pos.type === 'option' ? pos.contracts : pos.shares; }
+
+function posStats(pos) {
+  const q   = cache[pos.ticker]?.q;
+  const mul = multiplier(pos);
+  const n   = qty(pos);
+  if (!q) return null;
+  const price    = q.regularMarketPrice;
+  const prevClose= q.regularMarketPreviousClose;
+  const change   = q.regularMarketChange;
+  const changePct= q.regularMarketChangePercent;
+  const value    = n * mul * price;
+  const cost     = n * mul * pos.avgCost;
+  const pnl      = value - cost;
+  // Use pnl / |cost| so short positions show positive % when profitable
+  const pnlPct   = cost !== 0 ? (pnl / Math.abs(cost)) * 100 : 0;
+  const dayPnl   = n * mul * change;
+  return { price, prevClose, value, cost, pnl, pnlPct, dayPnl, dayPct: changePct };
+}
+
+function portfolioTotals() {
+  let totalValue = 0, totalCost = 0, totalDay = 0, hasPrice = false;
+  for (const pos of positions) {
+    const s = posStats(pos);
+    if (!s) continue;
+    hasPrice   = true;
+    totalValue += s.value;
+    totalCost  += s.cost;
+    totalDay   += s.dayPnl;
+  }
+  const totalPnl    = totalValue - totalCost;
+  const totalPnlPct = totalCost  > 0 ? (totalPnl / totalCost) * 100 : 0;
+  const dayPct      = (totalValue - totalDay) > 0 ? (totalDay / (totalValue - totalDay)) * 100 : 0;
+  return { totalValue, totalCost, totalPnl, totalPnlPct, totalDay, dayPct, hasPrice };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Formatting
+// ═══════════════════════════════════════════════════════════════════
+const fmtNum = (n, d=2) =>
+  (n == null || isNaN(n)) ? '—' : n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+
+const fmtUSD = n =>
+  (n == null || isNaN(n)) ? '—' : (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+const fmtPct = n =>
+  (n == null || isNaN(n)) ? '—' : (n >= 0 ? '+' : '') + fmtNum(n) + '%';
+
+const cls = n => (n == null || isNaN(n)) ? 'neu' : n >= 0 ? 'pos' : 'neg';
+
+// ═══════════════════════════════════════════════════════════════════
+// Render
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderCards();
+  renderTable();
+  renderCharts();
+  renderHistoryCharts();
+  renderClosedTrades();
+}
+
+function renderCards() {
+  const t = portfolioTotals();
+  const set = (id, txt, c) => {
+    const el = document.getElementById(id);
+    el.textContent = txt;
+    if (c) el.className = 'card-value ' + c;
+  };
+  set('c-value', t.hasPrice ? fmtUSD(t.totalValue) : '—');
+  document.getElementById('c-cost').textContent = t.totalCost ? 'Cost: ' + fmtUSD(t.totalCost) : '';
+  set('c-pnl', t.hasPrice ? fmtUSD(t.totalPnl) : '—', t.hasPrice ? cls(t.totalPnl) : '');
+  document.getElementById('c-pnl-pct').innerHTML = t.hasPrice
+    ? `<span class="${cls(t.totalPnlPct)}">${fmtPct(t.totalPnlPct)}</span>` : '';
+  set('c-day', t.hasPrice ? fmtUSD(t.totalDay) : '—', t.hasPrice ? cls(t.totalDay) : '');
+  document.getElementById('c-day-pct').innerHTML = t.hasPrice
+    ? `<span class="${cls(t.dayPct)}">${fmtPct(t.dayPct)}</span>` : '';
+  document.getElementById('c-count').textContent = positions.length;
+  const stocks  = positions.filter(p => p.type === 'stock').length;
+  const options = positions.filter(p => p.type === 'option').length;
+  document.getElementById('c-count-sub').textContent =
+    [stocks && `${stocks} stock${stocks>1?'s':''}`, options && `${options} option${options>1?'s':''}`]
+      .filter(Boolean).join(', ') || 'none';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbl-body');
+  if (!positions.length) {
+    tbody.innerHTML = `<tr><td colspan="10">
+      <div class="empty">
+        <div class="empty-icon">📈</div>
+        <strong>No positions yet</strong>
+        <p>${editMode ? 'Click "+ Add Position" to get started.' : 'No positions have been added yet.'}</p>
+      </div></td></tr>`;
+    return;
+  }
+  // Total market value for weight
+  let totalMV = 0;
+  for (const p of positions) { const s = posStats(p); if (s) totalMV += s.value; }
+
+  tbody.innerHTML = positions.map(pos => {
+    const s    = posStats(pos);
+    const mul  = multiplier(pos);
+    const n    = qty(pos);
+    const exp  = isExpired(pos);
+    const q    = cache[pos.ticker];
+
+    let priceCell = '<span class="loading">loading…</span>';
+    if (q && q.q === null) priceCell = '<span class="err">not found</span>';
+    else if (q && q.q)     priceCell = '$' + fmtNum(s.price);
+
+    let mv='—', pnlCell='—', pnlPctCell='—', dayCell='—', weightCell='—';
+    if (s) {
+      mv         = fmtUSD(s.value);
+      pnlCell    = `<span class="${cls(s.pnl)}">${fmtUSD(s.pnl)}</span>`;
+      pnlPctCell = `<span class="${cls(s.pnlPct)}">${fmtPct(s.pnlPct)}</span>`;
+      dayCell    = `<span class="${cls(s.dayPnl)}">${fmtUSD(s.dayPnl)} (${fmtPct(s.dayPct)})</span>`;
+      weightCell = totalMV > 0 ? fmtNum(s.value / totalMV * 100, 1) + '%' : '—';
+    }
+
+    // Position cell
+    const isShort = pos.type === 'option' && pos.contracts < 0;
+    let posCell;
+    if (pos.type === 'option') {
+      const dirBadge = exp
+        ? `<span class="badge badge-exp">EXPIRED</span>`
+        : pos.optionType === 'C'
+          ? `<span class="badge badge-call">CALL</span>`
+          : `<span class="badge badge-put">PUT</span>`;
+      const shortBadge = isShort ? `<span class="badge badge-short">SHORT</span>` : '';
+      posCell = `<div class="sym">${pos.underlying}${dirBadge}${shortBadge}</div>
+                 <div class="sym-name">$${fmtNum(pos.strike)} · ${pos.expiry}</div>`;
+    } else {
+      posCell = `<div class="sym">${pos.ticker}</div>
+                 <div class="sym-name">${pos.name || ''}</div>`;
+    }
+
+    const absCt = Math.abs(pos.contracts || 0);
+    const qtyLabel = pos.type === 'option'
+      ? `${absCt} contract${absCt !== 1 ? 's' : ''}`
+      : fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4);
+
+    const costLabel = pos.type === 'option'
+      ? `$${fmtNum(pos.avgCost)}<div style="font-size:10px;color:var(--muted)">× ${n}×100</div>`
+      : '$' + fmtNum(pos.avgCost);
+
+    const actions = editMode
+      ? `<td><div class="action-cell">
+           <button class="btn-ghost btn-edit" onclick="startEdit('${pos.id}')">Edit</button>
+           <button class="btn-ghost btn-danger" onclick="deletePos('${pos.id}')">✕</button>
+         </div></td>`
+      : '';
+
+    return `<tr>
+      <td>${posCell}</td>
+      <td>${qtyLabel}</td>
+      <td>${costLabel}</td>
+      <td>${priceCell}</td>
+      <td>${mv}</td>
+      <td>${pnlCell}</td>
+      <td>${pnlPctCell}</td>
+      <td>${dayCell}</td>
+      <td>${weightCell}</td>
+      ${actions}
+    </tr>`;
+  }).join('');
+}
+
+const COLORS = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f78166',
+                '#56d364','#79c0ff','#e3b341','#ff7b72','#a5d6ff'];
+
+function renderCharts() {
+  document.getElementById('charts').style.display = positions.length ? 'grid' : 'none';
+  if (!positions.length) return;
+
+  const labels=[], allocVals=[], pnlVals=[], pnlColors=[];
+  positions.forEach((pos, i) => {
+    const s = posStats(pos);
+    if (!s) return;
+    const short = pos.type === 'option' && pos.contracts < 0 ? ' S' : '';
+    labels.push(pos.type === 'option'
+      ? `${pos.underlying} ${pos.optionType==='C'?'C':'P'}$${fmtNum(pos.strike,0)}${short}`
+      : pos.ticker);
+    allocVals.push(Math.abs(s.value)); // abs so short positions still show in allocation
+    pnlVals.push(s.pnl);
+    pnlColors.push(s.pnl >= 0 ? '#3fb950' : '#f85149');
+  });
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#7d8590', boxWidth: 12, padding: 10, font: { size: 12 } } } },
+  };
+
+  if (allocChart) allocChart.destroy();
+  allocChart = new Chart(document.getElementById('alloc-chart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: allocVals, backgroundColor: COLORS.slice(0, labels.length), borderWidth: 0, hoverOffset: 5 }] },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins,
+      tooltip: { callbacks: { label: c => ` ${c.label}: ${fmtUSD(c.raw)}` } } } },
+  });
+
+  if (pnlBarChart) pnlBarChart.destroy();
+  pnlBarChart = new Chart(document.getElementById('pnl-chart'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: pnlVals, backgroundColor: pnlColors, borderRadius: 4, borderSkipped: false }] },
+    options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false },
+      tooltip: { callbacks: { label: c => ` P&L: ${fmtUSD(c.raw)}` } } },
+      scales: {
+        x: { ticks: { color: '#7d8590', font: { size: 11 } }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#7d8590', font: { size: 11 }, callback: v => '$' + fmtNum(v, 0) }, grid: { color: '#21262d' } },
+      },
+    },
+  });
+}
+
+function renderHistoryCharts() {
+  const lineDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: '#7d8590', boxWidth: 12, padding: 10, font: { size: 11 } } },
+    },
+    scales: {
+      x: { ticks: { color: '#7d8590', font: { size: 10 }, maxTicksLimit: 10 }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#7d8590', font: { size: 11 } }, grid: { color: '#21262d' } },
+    },
+  };
+
+  // ── NAV line chart ──
+  if (navLineChart) navLineChart.destroy();
+  navLineChart = new Chart(document.getElementById('nav-chart'), {
+    type: 'line',
+    data: {
+      labels: MONTHLY_NAV.map(d => d.l),
+      datasets: [{
+        label: 'Portfolio (SGD)',
+        data: MONTHLY_NAV.map(d => d.n),
+        borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)',
+        pointRadius: 2, pointHoverRadius: 5, fill: true, tension: 0.3,
+      }],
+    },
+    options: {
+      ...lineDefaults,
+      plugins: { ...lineDefaults.plugins,
+        tooltip: { callbacks: { label: c => ` SGD ${c.raw.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}` } },
+      },
+      scales: {
+        ...lineDefaults.scales,
+        y: { ...lineDefaults.scales.y, ticks: { ...lineDefaults.scales.y.ticks,
+          callback: v => 'S$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } },
+      },
+    },
+  });
+
+  // ── Performance index line chart ──
+  if (perfLineChart) perfLineChart.destroy();
+  perfLineChart = new Chart(document.getElementById('perf-chart'), {
+    type: 'line',
+    data: {
+      labels: PERF_INDEX.map(d => d.l),
+      datasets: [
+        { label: 'Portfolio',
+          data: PERF_INDEX.map(d => +(d.a - 100).toFixed(2)),
+          borderColor: '#58a6ff', backgroundColor: 'transparent',
+          pointRadius: 2, pointHoverRadius: 5, tension: 0.3, borderWidth: 2 },
+        { label: 'SPXTR',
+          data: PERF_INDEX.map(d => +(d.s - 100).toFixed(2)),
+          borderColor: '#3fb950', backgroundColor: 'transparent',
+          pointRadius: 0, pointHoverRadius: 4, tension: 0.3, borderWidth: 1.5, borderDash: [4,3] },
+        { label: 'EFA',
+          data: PERF_INDEX.map(d => +(d.e - 100).toFixed(2)),
+          borderColor: '#d29922', backgroundColor: 'transparent',
+          pointRadius: 0, pointHoverRadius: 4, tension: 0.3, borderWidth: 1.5, borderDash: [4,3] },
+        { label: 'VT',
+          data: PERF_INDEX.map(d => +(d.v - 100).toFixed(2)),
+          borderColor: '#bc8cff', backgroundColor: 'transparent',
+          pointRadius: 0, pointHoverRadius: 4, tension: 0.3, borderWidth: 1.5, borderDash: [4,3] },
+      ],
+    },
+    options: {
+      ...lineDefaults,
+      plugins: { ...lineDefaults.plugins,
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw >= 0 ? '+' : ''}${c.raw.toFixed(1)}%` } },
+      },
+      scales: {
+        ...lineDefaults.scales,
+        y: { ...lineDefaults.scales.y, ticks: { ...lineDefaults.scales.y.ticks,
+          callback: v => (v >= 0 ? '+' : '') + v + '%' } },
+      },
+    },
+  });
+}
+
+function renderClosedTrades() {
+  const tbody  = document.getElementById('closed-body');
+  const subEl  = document.getElementById('closed-sub');
+  const total  = CLOSED_TRADES.reduce((s, t) => s + t.pnl, 0);
+  subEl.textContent = `Total realized: +${fmtUSD(total)} USD`;
+
+  tbody.innerHTML = CLOSED_TRADES.map(t => {
+    const costLabel  = t.type === 'option'
+      ? `$${fmtNum(t.avgCost)} <span style="font-size:10px;color:var(--muted)">premium</span>`
+      : '$' + fmtNum(t.avgCost);
+    const closeLabel = t.closePrice === 0
+      ? '<span class="neu">expired</span>'
+      : '$' + fmtNum(t.closePrice);
+    const isShortOpt = t.type === 'option';
+    const qtyLabel   = t.type === 'option'
+      ? `${t.qty} contract${t.qty !== 1 ? 's' : ''} short`
+      : fmtNum(t.qty, t.qty % 1 === 0 ? 0 : 2);
+    return `<tr>
+      <td><div class="sym">${t.ticker}</div><div class="sym-name">${t.name}</div></td>
+      <td>${qtyLabel}</td>
+      <td>${costLabel}</td>
+      <td>${closeLabel}</td>
+      <td><span class="pnl-highlight pos">${fmtUSD(t.pnl)}</span></td>
+      <td><span class="pnl-highlight pos">+${fmtNum(t.pnlPct)}%</span></td>
+      <td style="color:var(--muted)">${t.closedAt}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Edit mode
+// ═══════════════════════════════════════════════════════════════════
+function setEditMode(on) {
+  editMode = on;
+  document.getElementById('add-btn').style.display   = on ? '' : 'none';
+  document.getElementById('th-actions').style.display= on ? '' : 'none';
+  document.getElementById('edit-btn').textContent    = on ? '🔒 Lock' : '✎ Edit';
+  if (!on) closeForm();
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Form
+// ═══════════════════════════════════════════════════════════════════
+function switchTab(tab) {
+  formTab = tab;
+  document.getElementById('tab-stock').classList.toggle('active', tab === 'stock');
+  document.getElementById('tab-option').classList.toggle('active', tab === 'option');
+  document.getElementById('fields-stock').style.display  = tab === 'stock'  ? '' : 'none';
+  document.getElementById('fields-option').style.display = tab === 'option' ? '' : 'none';
+}
+
+function buildOCCPreview() {
+  const sym = buildOCC(
+    document.getElementById('o-underlying').value,
+    document.getElementById('o-expiry').value,
+    document.getElementById('o-type').value,
+    document.getElementById('o-strike').value,
+  );
+  document.querySelector('#occ-preview span').textContent = sym || '—';
+}
+
+function openForm(title='Add Position') {
+  document.getElementById('form-title').textContent = title;
+  document.getElementById('add-form').classList.add('open');
+}
+
+function closeForm() {
+  document.getElementById('add-form').classList.remove('open');
+  editingId = null;
+  clearForm();
+}
+
+function clearForm() {
+  ['s-ticker','s-name','s-shares','s-cost',
+   'o-underlying','o-strike','o-expiry','o-contracts','o-cost'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('o-type').value = 'C';
+  buildOCCPreview();
+  switchTab('stock');
+}
+
+function startEdit(id) {
+  const pos = positions.find(p => p.id === id);
+  if (!pos) return;
+  editingId = id;
+  switchTab(pos.type);
+  if (pos.type === 'stock') {
+    document.getElementById('s-ticker').value = pos.ticker;
+    document.getElementById('s-name').value   = pos.name || '';
+    document.getElementById('s-shares').value = pos.shares;
+    document.getElementById('s-cost').value   = pos.avgCost;
+  } else {
+    document.getElementById('o-underlying').value = pos.underlying;
+    document.getElementById('o-type').value        = pos.optionType;
+    document.getElementById('o-strike').value      = pos.strike;
+    document.getElementById('o-expiry').value      = pos.expiry;
+    document.getElementById('o-contracts').value   = pos.contracts;
+    document.getElementById('o-cost').value        = pos.avgCost;
+    buildOCCPreview();
+  }
+  openForm('Edit Position');
+}
+
+document.getElementById('save-pos-btn').addEventListener('click', async () => {
+  let pos;
+
+  if (formTab === 'stock') {
+    const ticker  = document.getElementById('s-ticker').value.trim().toUpperCase();
+    const name    = document.getElementById('s-name').value.trim();
+    const shares  = parseFloat(document.getElementById('s-shares').value);
+    const avgCost = parseFloat(document.getElementById('s-cost').value);
+    if (!ticker || isNaN(shares) || shares <= 0 || isNaN(avgCost) || avgCost <= 0) {
+      alert('Fill in ticker, shares, and average cost.'); return;
+    }
+    pos = { type: 'stock', ticker, name, shares, avgCost };
+  } else {
+    const underlying = document.getElementById('o-underlying').value.trim().toUpperCase();
+    const optionType = document.getElementById('o-type').value;
+    const strike     = parseFloat(document.getElementById('o-strike').value);
+    const expiry     = document.getElementById('o-expiry').value;
+    const contracts  = parseInt(document.getElementById('o-contracts').value, 10);
+    const avgCost    = parseFloat(document.getElementById('o-cost').value);
+    if (!underlying || isNaN(strike) || !expiry || isNaN(contracts) || contracts === 0 || isNaN(avgCost) || avgCost <= 0) {
+      alert('Fill in all option fields.'); return;
+    }
+    const ticker = buildOCC(underlying, expiry, optionType, strike);
+    pos = { type: 'option', ticker, underlying, optionType, strike, expiry, contracts, avgCost };
+  }
+
+  if (editingId) {
+    const i = positions.findIndex(p => p.id === editingId);
+    if (i !== -1) { delete cache[positions[i].ticker]; positions[i] = { ...pos, id: editingId }; }
+  } else {
+    positions.push({ ...pos, id: uid() });
+    delete cache[pos.ticker];
+  }
+
+  closeForm();
+  renderAll();
+  await persistPositions();
+
+  // Fetch price for new/updated position
+  fetchQuotes([pos.ticker]).then(rows => {
+    for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
+    renderAll();
+  });
+});
+
+document.getElementById('cancel-pos-btn').addEventListener('click', closeForm);
+
+document.getElementById('add-btn').addEventListener('click', () => {
+  document.getElementById('add-form').classList.contains('open') ? closeForm() : openForm();
+});
+
+async function deletePos(id) {
+  if (!confirm('Remove this position?')) return;
+  positions = positions.filter(p => p.id !== id);
+  renderAll();
+  await persistPositions();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Settings
+// ═══════════════════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('cfg-name').value   = cfg.name();
+  document.getElementById('cfg-user').value   = cfg.user();
+  document.getElementById('cfg-repo').value   = cfg.repo();
+  document.getElementById('cfg-branch').value = cfg.branch();
+  document.getElementById('cfg-token').value  = cfg.token();
+  document.getElementById('settings-overlay').classList.add('open');
+}
+
+document.getElementById('settings-btn').addEventListener('click', openSettings);
+
+document.getElementById('save-cfg-btn').addEventListener('click', async () => {
+  const name   = document.getElementById('cfg-name').value.trim();
+  const user   = document.getElementById('cfg-user').value.trim();
+  const repo   = document.getElementById('cfg-repo').value.trim();
+  const branch = document.getElementById('cfg-branch').value.trim() || 'main';
+  const token  = document.getElementById('cfg-token').value.trim();
+
+  if (name)  localStorage.setItem('p_name',     name);
+  if (user)  localStorage.setItem('p_ghuser',   user);
+  if (repo)  localStorage.setItem('p_ghrepo',   repo);
+  localStorage.setItem('p_ghbranch', branch);
+  if (token) localStorage.setItem('p_ghtoken',  token);
+
+  document.getElementById('settings-overlay').classList.remove('open');
+  document.getElementById('hd-title').textContent = cfg.name();
+  document.getElementById('page-title').textContent = cfg.name();
+  updateEditBtn();
+  updateBanner();
+
+  // Try to load from GitHub with new settings
+  const ghData = await ghLoad();
+  if (ghData) {
+    positions = ghData.positions || [];
+    lsSave(ghData);
+    renderAll();
+    refreshPrices();
+  }
+});
+
+document.getElementById('close-cfg-btn').addEventListener('click', () => {
+  document.getElementById('settings-overlay').classList.remove('open');
+});
+
+document.getElementById('settings-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('settings-overlay'))
+    document.getElementById('settings-overlay').classList.remove('open');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// UI helpers
+// ═══════════════════════════════════════════════════════════════════
+function setRefreshing(on) {
+  document.getElementById('refresh-btn').innerHTML = on ? '<span class="spin">↻</span>' : '↻';
+}
+
+let statusTimer;
+function showStatus(msg, type) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = type === 'ok' ? 'status-ok' : type === 'err' ? 'status-err' : '';
+  clearTimeout(statusTimer);
+  if (msg) statusTimer = setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+function updateEditBtn() {
+  const btn = document.getElementById('edit-btn');
+  if (cfg.token()) {
+    btn.style.display = '';
+    btn.onclick = () => setEditMode(!editMode);
+  } else {
+    btn.style.display = 'none';
+    setEditMode(false);
+  }
+}
+
+function updateBanner() {
+  document.getElementById('setup-banner').style.display =
+    (!cfg.user() || !cfg.repo()) ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Refresh button
+// ═══════════════════════════════════════════════════════════════════
+document.getElementById('refresh-btn').addEventListener('click', refreshPrices);
+
+// ═══════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════
+(async function init() {
+  // Set title from config
+  document.getElementById('hd-title').textContent  = cfg.name();
+  document.getElementById('page-title').textContent = cfg.name();
+
+  updateEditBtn();
+  updateBanner();
+
+  // Load positions: try GitHub first, fall back to localStorage
+  let loaded = false;
+  if (cfg.user() && cfg.repo()) {
+    showStatus('Loading…', '');
+    const ghData = await ghLoad();
+    if (ghData) {
+      positions = ghData.positions || [];
+      lsSave(ghData);
+      loaded = true;
+      showStatus('', '');
+    }
+  }
+  if (!loaded) {
+    const ls = lsLoad().positions || [];
+    // Use localStorage data if it has entries, otherwise seed from hard-coded positions
+    positions = ls.length ? ls : SEED_POSITIONS.map(p => ({ ...p }));
+  }
+
+  renderAll();
+
+  if (positions.length) refreshPrices();
+})();
+</script>
+</body>
+</html>
