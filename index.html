@@ -445,10 +445,10 @@ tbody td:first-child { text-align: left; }
         <col style="width:7%">
         <col style="width:10%">
         <col style="width:10%">
-        <col style="width:10%">
-        <col style="width:7%">
         <col style="width:12%">
         <col style="width:8%">
+        <col style="width:10%">
+        <col style="width:7%">
         <col style="width:8%">
       </colgroup>
       <thead>
@@ -457,10 +457,10 @@ tbody td:first-child { text-align: left; }
           <th>Qty</th>
           <th>Avg Cost</th>
           <th>Price</th>
-          <th>Value</th>
-          <th>Weight</th>
           <th>P&amp;L</th>
           <th>P&amp;L %</th>
+          <th>Value</th>
+          <th>Weight</th>
           <th id="th-actions"></th>
         </tr>
       </thead>
@@ -995,11 +995,9 @@ function renderTable() {
     let posCell;
     if (pos.type === 'option') {
       const fav = tickerFavicon(pos.underlying);
-      const dirBadge = exp
-        ? `<span class="badge badge-exp">EXPIRED</span>`
-        : pos.optionType === 'C'
-          ? `<span class="badge badge-call">CALL</span>`
-          : `<span class="badge badge-put">PUT</span>`;
+      const dirBadge = pos.optionType === 'C'
+        ? `<span class="badge badge-call">CALL</span>`
+        : `<span class="badge badge-put">PUT</span>`;
       const expDate = new Date(pos.expiry + 'T00:00:00')
         .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
       posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.underlying}${dirBadge}</div>
@@ -1034,10 +1032,10 @@ function renderTable() {
       <td>${qtyLabel}</td>
       <td>${costLabel}</td>
       <td>${priceCell}</td>
-      <td>${mv}</td>
-      <td>${weightCell}</td>
       <td>${pnlCell}</td>
       <td>${pnlPctCell}</td>
+      <td>${mv}</td>
+      <td>${weightCell}</td>
       ${actions}
     </tr>`;
   }).join('');
@@ -1194,7 +1192,7 @@ function renderClosedTrades() {
   tbody.innerHTML = CLOSED_TRADES.map(t => {
     const costLabel  = '$' + fmtNum(t.avgCost);
     const closeLabel = t.closePrice === 0
-      ? '<span class="neu">expired</span>'
+      ? '<span class="neu">EXPIRED</span>'
       : '$' + fmtNum(t.closePrice);
     const qtyLabel = t.type === 'option'
       ? `-${t.qty}`
@@ -1205,11 +1203,9 @@ function renderClosedTrades() {
     let posCell;
     if (t.type === 'option') {
       const optMatch = t.ticker.match(/^(\w+)\s+[\d.]+([CP])$/);
-      const dirBadge = t.closePrice === 0
-        ? `<span class="badge badge-exp">EXPIRED</span>`
-        : optMatch?.[2] === 'C'
-          ? `<span class="badge badge-call">CALL</span>`
-          : `<span class="badge badge-put">PUT</span>`;
+      const dirBadge = optMatch?.[2] === 'C'
+        ? `<span class="badge badge-call">CALL</span>`
+        : `<span class="badge badge-put">PUT</span>`;
       posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${rootTicker}${dirBadge}${star}</div><div class="sym-name">${t.name}</div>`;
     } else {
       posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${t.ticker}${star}</div><div class="sym-name">${t.name}</div>`;
