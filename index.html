@@ -997,7 +997,10 @@ function renderTable() {
       : '—';
 
     const actions = editMode
-      ? `<td><button class="btn-ghost btn-danger" onclick="deletePos('${pos.id}')">✕</button></td>`
+      ? `<td><div class="action-cell">
+          <button class="btn-ghost btn-edit" onclick="startEdit('${pos.id}')">Edit</button>
+          <button class="btn-ghost btn-danger" onclick="deletePos('${pos.id}')">✕</button>
+         </div></td>`
       : '<td></td>';
 
     return `<tr>
