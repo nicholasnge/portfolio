@@ -685,7 +685,9 @@ async function ghLoad() {
 async function ghSave(data) {
   const token = cfg.token();
   if (!token) return { ok: false, error: 'No token' };
-  const url = `https://api.github.com/repos/${cfg.user()}/${cfg.repo()}/contents/data.json`;
+  const user = cfg.user() || 'nicholasnge';
+  const repo = cfg.repo() || 'portfolio';
+  const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json`;
   try {
     // Get SHA of existing file (undefined → create new)
     let sha;
@@ -735,12 +737,8 @@ async function persistPositions() {
   const data = buildDataObj();
   lsSave(data);
 
-  if (!cfg.user() || !cfg.repo()) {
-    showStatus('Saved locally', 'ok');
-    return;
-  }
   if (!cfg.token()) {
-    showStatus('No token — saved locally only', 'err');
+    showStatus('Saved locally only (no token)', 'ok');
     return;
   }
 
@@ -791,7 +789,7 @@ async function refreshPrices() {
   // Save prices back to data.json (and localStorage) so all visitors see them
   const data = buildDataObj();
   lsSave(data);
-  if (cfg.user() && cfg.repo() && cfg.token()) {
+  if (cfg.token()) {
     ghSave(data); // fire-and-forget; don't block the UI
   }
 
