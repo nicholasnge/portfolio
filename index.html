@@ -981,7 +981,7 @@ function renderTable() {
 
     const qtyLabel = pos.type === 'option'
       ? String(pos.contracts)
-      : fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4);
+      : pos.shares.toLocaleString('en-US', { maximumFractionDigits: 4 });
 
     const costLabel = pos.type === 'option'
       ? '$' + fmtNum(pos.avgCost)
