@@ -9,12 +9,12 @@
       "avgCost": 657.9
     },
     {
-      "id": "seed2",
       "type": "stock",
       "ticker": "NFLX",
       "name": "Netflix Inc.",
       "shares": 200,
-      "avgCost": 83.18
+      "avgCost": 83.18,
+      "id": "seed2"
     },
     {
       "type": "option",
@@ -39,5 +39,5 @@
       "id": "seed4"
     }
   ],
-  "updatedAt": "2026-03-04T03:58:11.559Z"
+  "updatedAt": "2026-03-04T03:58:14.392Z"
 }
