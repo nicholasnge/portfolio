@@ -440,6 +440,17 @@ tbody td:first-child { text-align: left; }
   <!-- Table -->
   <div class="tbl-wrap">
     <table>
+      <colgroup>
+        <col style="width:28%">
+        <col style="width:7%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:7%">
+        <col style="width:12%">
+        <col style="width:8%">
+        <col style="width:8%">
+      </colgroup>
       <thead>
         <tr>
           <th>Position</th>
@@ -467,6 +478,16 @@ tbody td:first-child { text-align: left; }
   </div>
   <div class="tbl-wrap">
     <table>
+      <colgroup>
+        <col style="width:28%">
+        <col style="width:7%">
+        <col style="width:10%">
+        <col style="width:10%">
+        <col style="width:12%">
+        <col style="width:8%">
+        <col style="width:12.5%">
+        <col style="width:12.5%">
+      </colgroup>
       <thead>
         <tr>
           <th>Position</th>
@@ -599,9 +620,9 @@ const CLOSED_TRADES = [
   { ticker:'VGT',       name:'Vanguard Info Tech ETF',               type:'stock',  qty:7.11,  avgCost:520.42, closePrice:609.50, pnl:633.32,   pnlPct:17.1,  openedAt:'Feb 2024', closedAt:'Jan 2026' },
   { ticker:'GOOG',      name:'Alphabet Inc',                         type:'stock',  qty:18,    avgCost:150.37, closePrice:180.87, pnl:549.00,   pnlPct:20.3,  openedAt:'Jun 2024', closedAt:'Sep 2025' },
   { ticker:'TKO',       name:'TKO Group Holdings',                   type:'stock',  qty:29,    avgCost:118.61, closePrice:133.25, pnl:424.56,   pnlPct:12.3,  openedAt:'Aug 2024', closedAt:'Nov 2024', hof:true },
-  { ticker:'ADBE 250P', name:'Adobe $250 Put — 2 contracts short',   type:'option', qty:2,     avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
-  { ticker:'DUOL 135C', name:'Duolingo $135 Call — short, expired',  type:'option', qty:1,     avgCost:2.53,   closePrice:0,      pnl:252.73,   pnlPct:99.9,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
-  { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',     type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'ADBE 250P', name:'Adobe · $250 Put',    type:'option', qty:2,     avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'DUOL 135C', name:'Duolingo · $135 Call', type:'option', qty:1,     avgCost:2.53,   closePrice:0,      pnl:252.73,   pnlPct:99.9,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'NFLX 75P',  name:'Netflix · $75 Put',   type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
 ];
 
 // Ticker → domain for favicon lookup
@@ -1171,21 +1192,30 @@ function renderClosedTrades() {
   subEl.textContent = `Total realized: +${fmtUSD(total)} USD`;
 
   tbody.innerHTML = CLOSED_TRADES.map(t => {
-    const costLabel  = t.type === 'option'
-      ? `$${fmtNum(t.avgCost)} <span style="font-size:10px;color:var(--muted)">premium</span>`
-      : '$' + fmtNum(t.avgCost);
+    const costLabel  = '$' + fmtNum(t.avgCost);
     const closeLabel = t.closePrice === 0
       ? '<span class="neu">expired</span>'
       : '$' + fmtNum(t.closePrice);
-    const isShortOpt = t.type === 'option';
-    const qtyLabel   = t.type === 'option'
-      ? `${t.qty} contract${t.qty !== 1 ? 's' : ''} short`
+    const qtyLabel = t.type === 'option'
+      ? `-${t.qty}`
       : fmtNum(t.qty, t.qty % 1 === 0 ? 0 : 2);
     const rootTicker = t.ticker.split(' ')[0];
     const fav = tickerFavicon(rootTicker);
     const star = t.hof ? `<span title="Hall of Fame" style="color:var(--yellow);margin-left:5px">★</span>` : '';
+    let posCell;
+    if (t.type === 'option') {
+      const optMatch = t.ticker.match(/^(\w+)\s+[\d.]+([CP])$/);
+      const dirBadge = t.closePrice === 0
+        ? `<span class="badge badge-exp">EXPIRED</span>`
+        : optMatch?.[2] === 'C'
+          ? `<span class="badge badge-call">CALL</span>`
+          : `<span class="badge badge-put">PUT</span>`;
+      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${rootTicker}${dirBadge}${star}</div><div class="sym-name">${t.name}</div>`;
+    } else {
+      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${t.ticker}${star}</div><div class="sym-name">${t.name}</div>`;
+    }
     return `<tr>
-      <td><div class="sym" style="display:flex;align-items:center">${fav}${t.ticker}${star}</div><div class="sym-name">${t.name}</div></td>
+      <td>${posCell}</td>
       <td>${qtyLabel}</td>
       <td>${costLabel}</td>
       <td>${closeLabel}</td>
