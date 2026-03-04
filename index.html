@@ -709,55 +709,31 @@ async function persistPositions() {
 // ═══════════════════════════════════════════════════════════════════
 // Yahoo Finance live data
 // ═══════════════════════════════════════════════════════════════════
+// Uses v8/finance/chart (no auth required) routed through allorigins.win for CORS.
 
-// Yahoo Finance now requires a crumb token (tied to your browser's Yahoo cookie).
-// We fetch it once and cache it for 30 minutes.
-let _crumb = null, _crumbTs = 0;
-
-async function fetchCrumb() {
-  if (_crumb && Date.now() - _crumbTs < 30 * 60 * 1000) return _crumb;
-
-  const crumbUrl = 'https://query2.finance.yahoo.com/v1/test/getcrumb';
-  const attempts = [
-    crumbUrl,                                                         // direct (uses browser Yahoo cookie)
-    `https://corsproxy.io/?${encodeURIComponent(crumbUrl)}`,         // via proxy
-  ];
-
-  for (const url of attempts) {
-    try {
-      const res  = await fetch(url);
-      if (!res.ok) continue;
-      const text = (await res.text()).trim();
-      // Valid crumb: short string, not HTML, not "null"
-      if (text && text !== 'null' && !text.startsWith('<') && text.length < 60) {
-        _crumb  = text;
-        _crumbTs = Date.now();
-        return _crumb;
-      }
-    } catch { /* try next */ }
-  }
-  return null;
+async function fetchOneQuote(symbol) {
+  const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`;
+  const proxied  = `https://api.allorigins.win/get?url=${encodeURIComponent(chartUrl)}`;
+  try {
+    const res = await fetch(proxied);
+    if (!res.ok) return null;
+    const wrapper = await res.json();
+    const data    = JSON.parse(wrapper.contents);
+    const meta    = data?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    // Normalise to the same shape posStats() expects
+    return {
+      symbol:                      meta.symbol,
+      regularMarketPrice:          meta.regularMarketPrice,
+      regularMarketPreviousClose:  meta.chartPreviousClose,
+    };
+  } catch { return null; }
 }
 
 async function fetchQuotes(symbols) {
   if (!symbols.length) return [];
-  const syms = symbols.map(encodeURIComponent).join(',');
-
-  const crumb     = await fetchCrumb();
-  const crumbStr  = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
-  const base      = `https://query2.finance.yahoo.com/v8/finance/quote?symbols=${syms}&lang=en-US${crumbStr}`;
-  const proxied   = `https://corsproxy.io/?${encodeURIComponent(base)}`;
-
-  for (const url of [base, proxied]) {
-    try {
-      const res  = await fetch(url);
-      if (!res.ok) continue;
-      const json = await res.json();
-      const rows = json?.quoteResponse?.result;
-      if (Array.isArray(rows) && rows.length) return rows;
-    } catch { /* try next */ }
-  }
-  return [];
+  const results = await Promise.all(symbols.map(fetchOneQuote));
+  return results.filter(Boolean);
 }
 
 async function refreshPrices() {
