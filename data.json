@@ -6,7 +6,7 @@
       "ticker": "META",
       "name": "Meta Platforms",
       "shares": 71.9,
-      "avgCost": 657.90
+      "avgCost": 657.9
     },
     {
       "id": "seed2",
@@ -28,16 +28,16 @@
       "avgCost": 42.75
     },
     {
-      "id": "seed4",
       "type": "option",
       "ticker": "ORCL260313P00130000",
       "underlying": "ORCL",
       "optionType": "P",
       "strike": 130,
       "expiry": "2026-03-13",
-      "contracts": -2,
-      "avgCost": 4.24
+      "contracts": -4,
+      "avgCost": 4.24,
+      "id": "seed4"
     }
   ],
-  "updatedAt": "2026-03-04T00:00:00.000Z"
+  "updatedAt": "2026-03-04T03:57:19.869Z"
 }
