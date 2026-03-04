@@ -1,12 +1,12 @@
 {
   "positions": [
     {
-      "id": "seed1",
       "type": "stock",
       "ticker": "META",
       "name": "Meta Platforms",
       "shares": 71.9,
-      "avgCost": 657.9
+      "avgCost": 657.9,
+      "id": "seed1"
     },
     {
       "type": "stock",
@@ -39,5 +39,5 @@
       "id": "seed4"
     }
   ],
-  "updatedAt": "2026-03-04T03:58:14.392Z"
+  "updatedAt": "2026-03-04T03:58:17.127Z"
 }
