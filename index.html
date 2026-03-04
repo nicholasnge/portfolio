@@ -585,6 +585,22 @@ const CLOSED_TRADES = [
   { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',     type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  closedAt:'Feb 2026' },
 ];
 
+// Trade events — when significant positions were first opened (cost > $1k USD)
+// Dates are best estimates; opening month is the month the position was initiated.
+const TRADE_EVENTS = [
+  { month:'Feb 2024', ticker:'VGT',       domain:'vanguard.com',           openCost:3700  },
+  { month:'Feb 2024', ticker:'VOO',       domain:'vanguard.com',           openCost:3725  },
+  { month:'Mar 2024', ticker:'GOOG',      domain:'google.com',             openCost:2707  },
+  { month:'May 2024', ticker:'TKO',       domain:'tkogroupholdings.com',   openCost:3440  },
+  { month:'Jun 2024', ticker:'NVDA',      domain:'nvidia.com',             openCost:19068 },
+  { month:'Aug 2024', ticker:'IBKR',      domain:'interactivebrokers.com', openCost:7472  },
+  { month:'Sep 2024', ticker:'NFLX',      domain:'netflix.com',            openCost:16634 },
+  { month:'Oct 2024', ticker:'META',      domain:'meta.com',               openCost:22800 },
+  { month:'Nov 2024', ticker:'IMAX',      domain:'imax.com',               openCost:36793 },
+  { month:'Sep 2025', ticker:'ADBE 250P', domain:'adobe.com',              openCost:2973  },
+  { month:'Sep 2025', ticker:'META 600P', domain:'meta.com',               openCost:4275  },
+];
+
 // Monthly NAV in SGD — from IBKR Allocation by Asset Class
 const MONTHLY_NAV = [
   {l:'Jan 2024',n:5001},{l:'Feb 2024',n:10124},{l:'Mar 2024',n:14278},{l:'Apr 2024',n:15722},
@@ -1014,6 +1030,85 @@ function renderCharts() {
   });
 }
 
+// ── Trade event marker helpers ──────────────────────────────────────────────
+
+// Returns a 24×24 canvas with the favicon clipped to a circle.
+// Calls navLineChart.update('none') once the image loads.
+const _faviCache = {};
+function faviCanvas(domain) {
+  if (_faviCache[domain]) return _faviCache[domain];
+  const SZ = 24;
+  const c = document.createElement('canvas');
+  c.width = c.height = SZ;
+  const img = new Image();
+  img.onload = () => {
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, SZ, SZ);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(SZ / 2, SZ / 2, SZ / 2, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, 0, 0, SZ, SZ);
+    ctx.restore();
+    navLineChart?.update('none');
+  };
+  img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+  _faviCache[domain] = c;
+  return c;
+}
+
+// Build one scatter dataset per trade event (>$1k) to overlay on the NAV chart.
+// Events in the same month are stacked vertically above the line.
+function buildTradeMarkerDatasets(labels, navData) {
+  const byMonth = {};
+  for (const ev of TRADE_EVENTS) {
+    if (ev.openCost >= 1000) (byMonth[ev.month] ??= []).push(ev);
+  }
+  const YOFF = 2800; // SGD vertical gap between stacked markers
+  return Object.entries(byMonth).flatMap(([month, events]) => {
+    const idx = labels.indexOf(month);
+    if (idx < 0) return [];
+    const base = navData[idx];
+    return events.map((ev, k) => ({
+      label: ev.ticker,
+      _isMarker: true,
+      data: labels.map((_, i) => i === idx ? base + YOFF * (k + 1) : null),
+      pointStyle: labels.map((_, i) => i === idx ? faviCanvas(ev.domain) : 'circle'),
+      pointRadius: labels.map((_, i) => i === idx ? 12 : 0),
+      pointHoverRadius: labels.map((_, i) => i === idx ? 15 : 0),
+      showLine: false,
+      spanGaps: false,
+      order: 0,
+    }));
+  });
+}
+
+// Plugin: draws a dashed vertical line from each marker down to the NAV line.
+const tradeDropLinePlugin = {
+  id: 'tradeDropLines',
+  afterDraw(chart) {
+    const ctx = chart.ctx;
+    const mainMeta = chart.getDatasetMeta(0);
+    chart.data.datasets.forEach((ds, di) => {
+      if (!ds._isMarker) return;
+      const markerMeta = chart.getDatasetMeta(di);
+      markerMeta.data.forEach((pt, i) => {
+        if (ds.data[i] === null) return;
+        const anchor = mainMeta.data[i];
+        ctx.save();
+        ctx.strokeStyle = 'rgba(88,166,255,0.22)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(pt.x, anchor.y);
+        ctx.lineTo(pt.x, pt.y);
+        ctx.stroke();
+        ctx.restore();
+      });
+    });
+  },
+};
+
 function renderHistoryCharts() {
   const lineDefaults = {
     responsive: true,
@@ -1030,21 +1125,41 @@ function renderHistoryCharts() {
 
   // ── NAV line chart ──
   if (navLineChart) navLineChart.destroy();
+  const navLabels = MONTHLY_NAV.map(d => d.l);
+  const navData   = MONTHLY_NAV.map(d => d.n);
   navLineChart = new Chart(document.getElementById('nav-chart'), {
     type: 'line',
     data: {
-      labels: MONTHLY_NAV.map(d => d.l),
-      datasets: [{
-        label: 'Portfolio (SGD)',
-        data: MONTHLY_NAV.map(d => d.n),
-        borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)',
-        pointRadius: 2, pointHoverRadius: 5, fill: true, tension: 0.3,
-      }],
+      labels: navLabels,
+      datasets: [
+        {
+          label: 'Portfolio (SGD)',
+          data: navData,
+          borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)',
+          pointRadius: 2, pointHoverRadius: 5, fill: true, tension: 0.3,
+          order: 1,
+        },
+        ...buildTradeMarkerDatasets(navLabels, navData),
+      ],
     },
     options: {
       ...lineDefaults,
-      plugins: { ...lineDefaults.plugins,
-        tooltip: { callbacks: { label: c => ` SGD ${c.raw.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}` } },
+      plugins: {
+        ...lineDefaults.plugins,
+        legend: {
+          labels: {
+            ...lineDefaults.plugins.legend.labels,
+            filter: (item, data) => !data.datasets[item.datasetIndex]?._isMarker,
+          },
+        },
+        tooltip: {
+          filter: item => !item.dataset._isMarker || item.raw !== null,
+          callbacks: {
+            label: c => c.dataset._isMarker
+              ? ` ↑ Opened: ${c.dataset.label}`
+              : ` SGD ${c.raw.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+          },
+        },
       },
       scales: {
         ...lineDefaults.scales,
@@ -1052,6 +1167,7 @@ function renderHistoryCharts() {
           callback: v => 'S$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } },
       },
     },
+    plugins: [tradeDropLinePlugin],
   });
 
   // ── Performance index line chart ──
