@@ -564,6 +564,7 @@ let positions  = [];
 let cache      = {};   // ticker → { q: quoteObj, ts: timestamp }
 let editMode   = false;
 let manualPrices = {};  // posId → manually entered price
+let cashUSD    = 0;
 let editingId  = null;
 let formTab    = 'stock';
 let allocChart   = null;
@@ -709,8 +710,28 @@ async function ghSave(data) {
 const lsSave = d => localStorage.setItem('p_data', JSON.stringify(d));
 const lsLoad = () => JSON.parse(localStorage.getItem('p_data') || '{"positions":[]}');
 
+// Build the full data object (positions + last-known prices)
+function buildDataObj() {
+  const prices = {};
+  for (const [sym, entry] of Object.entries(cache)) {
+    if (entry?.q?.regularMarketPrice) {
+      prices[sym] = { price: entry.q.regularMarketPrice, ts: entry.ts };
+    }
+  }
+  return { positions, prices, cashUSD, updatedAt: new Date().toISOString() };
+}
+
+// Restore prices from a loaded data object into the in-memory cache
+function restorePrices(data) {
+  for (const [sym, p] of Object.entries(data.prices || {})) {
+    if (p?.price) {
+      cache[sym] = { q: { symbol: sym, regularMarketPrice: p.price, regularMarketPreviousClose: p.price }, ts: p.ts };
+    }
+  }
+}
+
 async function persistPositions() {
-  const data = { positions, updatedAt: new Date().toISOString() };
+  const data = buildDataObj();
   lsSave(data);
 
   if (!cfg.user() || !cfg.repo()) {
@@ -723,7 +744,7 @@ async function persistPositions() {
   }
 
   showStatus('Saving…', '');
-  const r = await ghSave(data);
+  const r = await ghSave(buildDataObj());
   r.ok ? showStatus('Saved to GitHub ✓', 'ok') : showStatus(`Save failed (${r.status || r.error})`, 'err');
 }
 
@@ -761,22 +782,20 @@ async function refreshPrices() {
   if (!positions.length) return;
   setRefreshing(true);
 
-  // Batch fetch all symbols
   const syms = [...new Set(positions.map(p => p.ticker))];
   const rows = await fetchQuotes(syms);
 
-  // Populate cache
   for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
 
-  // Mark any symbol that came back with 0 price as invalid
-  for (const sym of syms) {
-    if (cache[sym]?.q?.regularMarketPrice === 0 && cache[sym]?.q?.regularMarketPreviousClose === 0) {
-      cache[sym] = { q: null, ts: Date.now() };
-    }
+  // Save prices back to data.json (and localStorage) so all visitors see them
+  const data = buildDataObj();
+  lsSave(data);
+  if (cfg.user() && cfg.repo() && cfg.token()) {
+    ghSave(data); // fire-and-forget; don't block the UI
   }
 
-  document.getElementById('hd-sub').textContent = 'Updated ' + new Date().toLocaleTimeString();
-  localStorage.setItem('p_priceTs', Date.now().toString());
+  const ts = new Date().toLocaleTimeString();
+  document.getElementById('hd-sub').textContent = 'Prices updated ' + ts;
   setRefreshing(false);
   renderAll();
 }
@@ -847,9 +866,17 @@ function portfolioTotals() {
     totalValue += s.value;
     totalCost  += s.cost;
   }
+  if (cashUSD) { totalValue += cashUSD; totalCost += cashUSD; hasPrice = true; }
   const totalPnl    = totalValue - totalCost;
   const totalPnlPct = totalCost  > 0 ? (totalPnl / totalCost) * 100 : 0;
   return { totalValue, totalCost, totalPnl, totalPnlPct, hasPrice };
+}
+
+function setCash(input) {
+  const val = parseFloat(input.value);
+  cashUSD = (!isNaN(val) && val >= 0) ? val : 0;
+  renderCards();
+  persistPositions();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -916,12 +943,14 @@ function renderTable() {
     const n   = qty(pos);
     const exp = isExpired(pos);
 
-    // Price cell — always an editable input
+    // Price cell — editable input in edit mode, static text otherwise
     const currentPrice = s ? s.price : (manualPrices[pos.id] ?? '');
-    const priceCell = `<input type="number" class="price-input" data-id="${pos.id}"
-      value="${currentPrice !== '' ? fmtNum(currentPrice, 2) : ''}"
-      placeholder="enter price" step="0.01" min="0"
-      oninput="setPriceManual(this)">`;
+    const priceCell = editMode
+      ? `<input type="number" class="price-input" data-id="${pos.id}"
+          value="${currentPrice !== '' ? fmtNum(currentPrice, 2) : ''}"
+          placeholder="enter price" step="0.01" min="0"
+          oninput="setPriceManual(this)">`
+      : `<span>${currentPrice !== '' ? '$' + fmtNum(currentPrice, 2) : '—'}</span>`;
 
     let mv='—', pnlCell='—', pnlPctCell='—';
     if (s) {
@@ -977,6 +1006,19 @@ function renderTable() {
       ${actions}
     </tr>`;
   }).join('');
+
+  // Cash row
+  const cashValueCell = editMode
+    ? `<input type="number" class="price-input" id="cash-input" value="${cashUSD || ''}"
+        placeholder="0.00" step="0.01" min="0" oninput="setCash(this)">`
+    : (cashUSD ? fmtUSD(cashUSD) : '—');
+  tbody.innerHTML += `<tr style="border-top:1px solid var(--border)">
+    <td><div class="sym">$ Cash (USD)</div></td>
+    <td>—</td><td>—</td><td>—</td>
+    <td>${cashValueCell}</td>
+    <td>—</td><td>—</td>
+    <td></td>
+  </tr>`;
 }
 
 const COLORS = ['#58a6ff','#3fb950','#bc8cff','#d29922','#f78166',
@@ -1340,13 +1382,13 @@ function showStatus(msg, type) {
 
 function updateEditBtn() {
   const btn = document.getElementById('edit-btn');
-  btn.style.display = '';
+  // Only show edit button when GitHub token is configured (owner only)
+  btn.style.display = cfg.token() ? '' : 'none';
   btn.onclick = () => setEditMode(!editMode);
 }
 
 function updateBanner() {
-  document.getElementById('setup-banner').style.display =
-    (!cfg.user() || !cfg.repo()) ? '' : 'none';
+  document.getElementById('setup-banner').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1372,22 +1414,22 @@ document.getElementById('refresh-btn').addEventListener('click', refreshPrices);
     const ghData = await ghLoad();
     if (ghData) {
       positions = ghData.positions || [];
+      cashUSD   = ghData.cashUSD   || 0;
+      restorePrices(ghData);
       lsSave(ghData);
       loaded = true;
       showStatus('', '');
     }
   }
   if (!loaded) {
-    const ls = lsLoad().positions || [];
-    // Use localStorage data if it has entries, otherwise seed from hard-coded positions
+    const lsData = lsLoad();
+    const ls = lsData.positions || [];
     positions = ls.length ? ls : SEED_POSITIONS.map(p => ({ ...p }));
+    cashUSD   = lsData.cashUSD || 0;
+    restorePrices(lsData);
   }
 
   renderAll();
-
-  // Auto-refresh prices at most once per day
-  const lastRefresh = parseInt(localStorage.getItem('p_priceTs') || '0', 10);
-  if (positions.length && Date.now() - lastRefresh > 24 * 60 * 60 * 1000) refreshPrices();
 })();
 </script>
 </body>
