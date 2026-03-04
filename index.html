@@ -764,7 +764,7 @@ async function fetchOneQuote(symbol) {
     if (!meta) return null;
     // Normalise to the same shape posStats() expects
     return {
-      symbol:                      meta.symbol,
+      symbol:                      symbol,   // use input symbol so cache key matches pos.ticker
       regularMarketPrice:          meta.regularMarketPrice,
       regularMarketPreviousClose:  meta.chartPreviousClose,
     };
@@ -789,14 +789,14 @@ async function refreshPrices() {
   // Save prices back to data.json (and localStorage) so all visitors see them
   const data = buildDataObj();
   lsSave(data);
-  if (cfg.token()) {
-    ghSave(data); // fire-and-forget; don't block the UI
-  }
-
   const ts = new Date().toLocaleTimeString();
   document.getElementById('hd-sub').textContent = 'Prices updated ' + ts;
   setRefreshing(false);
   renderAll();
+  if (cfg.token()) {
+    const r = await ghSave(data);
+    if (!r.ok) showStatus(`Price save failed (${r.status || r.error})`, 'err');
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
