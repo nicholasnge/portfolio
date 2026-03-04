@@ -241,6 +241,20 @@ tbody td:first-child { text-align: left; }
 .section-title  { font-size: 16px; font-weight: 600; }
 .section-sub    { font-size: 12px; color: var(--muted); }
 .pnl-highlight  { font-weight: 600; }
+
+.price-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  width: 90px;
+  padding: 2px 4px;
+  outline: none;
+  text-align: right;
+}
+.price-input:focus { border-bottom-color: var(--accent); }
+.price-input::placeholder { color: var(--muted); font-size: 11px; }
 </style>
 </head>
 <body>
@@ -435,9 +449,7 @@ tbody td:first-child { text-align: left; }
           <th>Value</th>
           <th>P&amp;L</th>
           <th>P&amp;L %</th>
-          <th>Day</th>
-          <th>Weight</th>
-          <th id="th-actions" style="display:none"></th>
+          <th id="th-actions"></th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -551,6 +563,7 @@ const cfg = {
 let positions  = [];
 let cache      = {};   // ticker → { q: quoteObj, ts: timestamp }
 let editMode   = false;
+let manualPrices = {};  // posId → manually entered price
 let editingId  = null;
 let formTab    = 'stock';
 let allocChart   = null;
@@ -585,21 +598,29 @@ const CLOSED_TRADES = [
   { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',     type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  closedAt:'Feb 2026' },
 ];
 
-// Trade events — when significant positions were first opened (cost > $1k USD)
-// Dates are best estimates; opening month is the month the position was initiated.
-const TRADE_EVENTS = [
-  { month:'Feb 2024', ticker:'VGT',       domain:'vanguard.com',           openCost:3700  },
-  { month:'Feb 2024', ticker:'VOO',       domain:'vanguard.com',           openCost:3725  },
-  { month:'Mar 2024', ticker:'GOOG',      domain:'google.com',             openCost:2707  },
-  { month:'May 2024', ticker:'TKO',       domain:'tkogroupholdings.com',   openCost:3440  },
-  { month:'Jun 2024', ticker:'NVDA',      domain:'nvidia.com',             openCost:19068 },
-  { month:'Aug 2024', ticker:'IBKR',      domain:'interactivebrokers.com', openCost:7472  },
-  { month:'Sep 2024', ticker:'NFLX',      domain:'netflix.com',            openCost:16634 },
-  { month:'Oct 2024', ticker:'META',      domain:'meta.com',               openCost:22800 },
-  { month:'Nov 2024', ticker:'IMAX',      domain:'imax.com',               openCost:36793 },
-  { month:'Sep 2025', ticker:'ADBE 250P', domain:'adobe.com',              openCost:2973  },
-  { month:'Sep 2025', ticker:'META 600P', domain:'meta.com',               openCost:4275  },
-];
+// Ticker → domain for favicon lookup
+const TICKER_DOMAINS = {
+  META:  'meta.com',
+  NFLX:  'netflix.com',
+  NVDA:  'nvidia.com',
+  IMAX:  'imax.com',
+  IBKR:  'interactivebrokers.com',
+  VOO:   'vanguard.com',
+  VGT:   'vanguard.com',
+  GOOG:  'google.com',
+  TKO:   'tkogroupholdings.com',
+  ADBE:  'adobe.com',
+  DUOL:  'duolingo.com',
+  ORCL:  'oracle.com',
+};
+
+function tickerFavicon(ticker) {
+  const domain = TICKER_DOMAINS[ticker.toUpperCase()] || null;
+  if (!domain) return '';
+  return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32"
+    style="width:18px;height:18px;border-radius:4px;vertical-align:middle;margin-right:7px;flex-shrink:0"
+    onerror="this.style.display='none'">`;
+}
 
 // Monthly NAV in SGD — from IBKR Allocation by Asset Class
 const MONTHLY_NAV = [
@@ -755,6 +776,7 @@ async function refreshPrices() {
   }
 
   document.getElementById('hd-sub').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  localStorage.setItem('p_priceTs', Date.now().toString());
   setRefreshing(false);
   renderAll();
 }
@@ -794,37 +816,40 @@ function multiplier(pos) { return pos.type === 'option' ? 100 : 1; }
 function qty(pos)         { return pos.type === 'option' ? pos.contracts : pos.shares; }
 
 function posStats(pos) {
-  const q   = cache[pos.ticker]?.q;
-  const mul = multiplier(pos);
-  const n   = qty(pos);
-  if (!q) return null;
-  const price    = q.regularMarketPrice;
-  const prevClose= q.regularMarketPreviousClose;
-  const change   = q.regularMarketChange;
-  const changePct= q.regularMarketChangePercent;
-  const value    = n * mul * price;
-  const cost     = n * mul * pos.avgCost;
-  const pnl      = value - cost;
-  // Use pnl / |cost| so short positions show positive % when profitable
-  const pnlPct   = cost !== 0 ? (pnl / Math.abs(cost)) * 100 : 0;
-  const dayPnl   = n * mul * change;
-  return { price, prevClose, value, cost, pnl, pnlPct, dayPnl, dayPct: changePct };
+  const manual = manualPrices[pos.id] ?? null;
+  const q      = cache[pos.ticker]?.q;
+  const price  = manual !== null ? manual : q?.regularMarketPrice;
+  if (price == null) return null;
+  const mul    = multiplier(pos);
+  const n      = qty(pos);
+  const value  = n * mul * price;
+  const cost   = n * mul * pos.avgCost;
+  const pnl    = value - cost;
+  const pnlPct = cost !== 0 ? (pnl / Math.abs(cost)) * 100 : 0;
+  return { price, value, cost, pnl, pnlPct };
+}
+
+function setPriceManual(input) {
+  const id  = input.dataset.id;
+  const val = parseFloat(input.value);
+  if (!isNaN(val) && val >= 0) {
+    manualPrices[id] = val;
+    renderTable();
+  }
 }
 
 function portfolioTotals() {
-  let totalValue = 0, totalCost = 0, totalDay = 0, hasPrice = false;
+  let totalValue = 0, totalCost = 0, hasPrice = false;
   for (const pos of positions) {
     const s = posStats(pos);
     if (!s) continue;
     hasPrice   = true;
     totalValue += s.value;
     totalCost  += s.cost;
-    totalDay   += s.dayPnl;
   }
   const totalPnl    = totalValue - totalCost;
   const totalPnlPct = totalCost  > 0 ? (totalPnl / totalCost) * 100 : 0;
-  const dayPct      = (totalValue - totalDay) > 0 ? (totalDay / (totalValue - totalDay)) * 100 : 0;
-  return { totalValue, totalCost, totalPnl, totalPnlPct, totalDay, dayPct, hasPrice };
+  return { totalValue, totalCost, totalPnl, totalPnlPct, hasPrice };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -864,9 +889,6 @@ function renderCards() {
   set('c-pnl', t.hasPrice ? fmtUSD(t.totalPnl) : '—', t.hasPrice ? cls(t.totalPnl) : '');
   document.getElementById('c-pnl-pct').innerHTML = t.hasPrice
     ? `<span class="${cls(t.totalPnlPct)}">${fmtPct(t.totalPnlPct)}</span>` : '';
-  set('c-day', t.hasPrice ? fmtUSD(t.totalDay) : '—', t.hasPrice ? cls(t.totalDay) : '');
-  document.getElementById('c-day-pct').innerHTML = t.hasPrice
-    ? `<span class="${cls(t.dayPct)}">${fmtPct(t.dayPct)}</span>` : '';
   document.getElementById('c-count').textContent = positions.length;
   const stocks  = positions.filter(p => p.type === 'stock').length;
   const options = positions.filter(p => p.type === 'option').length;
@@ -877,53 +899,53 @@ function renderCards() {
 
 function renderTable() {
   const tbody = document.getElementById('tbl-body');
+
   if (!positions.length) {
-    tbody.innerHTML = `<tr><td colspan="10">
+    tbody.innerHTML = `<tr><td colspan="8">
       <div class="empty">
         <div class="empty-icon">📈</div>
         <strong>No positions yet</strong>
-        <p>${editMode ? 'Click "+ Add Position" to get started.' : 'No positions have been added yet.'}</p>
+        <p>Click "+ Add Position" to get started.</p>
       </div></td></tr>`;
     return;
   }
-  // Total market value for weight
-  let totalMV = 0;
-  for (const p of positions) { const s = posStats(p); if (s) totalMV += s.value; }
 
   tbody.innerHTML = positions.map(pos => {
-    const s    = posStats(pos);
-    const mul  = multiplier(pos);
-    const n    = qty(pos);
-    const exp  = isExpired(pos);
-    const q    = cache[pos.ticker];
+    const s   = posStats(pos);
+    const mul = multiplier(pos);
+    const n   = qty(pos);
+    const exp = isExpired(pos);
 
-    let priceCell = '<span class="loading">loading…</span>';
-    if (q && q.q === null) priceCell = '<span class="err">not found</span>';
-    else if (q && q.q)     priceCell = '$' + fmtNum(s.price);
+    // Price cell — always an editable input
+    const currentPrice = s ? s.price : (manualPrices[pos.id] ?? '');
+    const priceCell = `<input type="number" class="price-input" data-id="${pos.id}"
+      value="${currentPrice !== '' ? fmtNum(currentPrice, 2) : ''}"
+      placeholder="enter price" step="0.01" min="0"
+      oninput="setPriceManual(this)">`;
 
-    let mv='—', pnlCell='—', pnlPctCell='—', dayCell='—', weightCell='—';
+    let mv='—', pnlCell='—', pnlPctCell='—';
     if (s) {
       mv         = fmtUSD(s.value);
       pnlCell    = `<span class="${cls(s.pnl)}">${fmtUSD(s.pnl)}</span>`;
       pnlPctCell = `<span class="${cls(s.pnlPct)}">${fmtPct(s.pnlPct)}</span>`;
-      dayCell    = `<span class="${cls(s.dayPnl)}">${fmtUSD(s.dayPnl)} (${fmtPct(s.dayPct)})</span>`;
-      weightCell = totalMV > 0 ? fmtNum(s.value / totalMV * 100, 1) + '%' : '—';
     }
 
-    // Position cell
+    // Position cell with favicon
     const isShort = pos.type === 'option' && pos.contracts < 0;
     let posCell;
     if (pos.type === 'option') {
+      const fav = tickerFavicon(pos.underlying);
       const dirBadge = exp
         ? `<span class="badge badge-exp">EXPIRED</span>`
         : pos.optionType === 'C'
           ? `<span class="badge badge-call">CALL</span>`
           : `<span class="badge badge-put">PUT</span>`;
       const shortBadge = isShort ? `<span class="badge badge-short">SHORT</span>` : '';
-      posCell = `<div class="sym">${pos.underlying}${dirBadge}${shortBadge}</div>
+      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.underlying}${dirBadge}${shortBadge}</div>
                  <div class="sym-name">$${fmtNum(pos.strike)} · ${pos.expiry}</div>`;
     } else {
-      posCell = `<div class="sym">${pos.ticker}</div>
+      const fav = tickerFavicon(pos.ticker);
+      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.ticker}</div>
                  <div class="sym-name">${pos.name || ''}</div>`;
     }
 
@@ -936,12 +958,13 @@ function renderTable() {
       ? `$${fmtNum(pos.avgCost)}<div style="font-size:10px;color:var(--muted)">× ${n}×100</div>`
       : '$' + fmtNum(pos.avgCost);
 
-    const actions = editMode
-      ? `<td><div class="action-cell">
-           <button class="btn-ghost btn-edit" onclick="startEdit('${pos.id}')">Edit</button>
-           <button class="btn-ghost btn-danger" onclick="deletePos('${pos.id}')">✕</button>
-         </div></td>`
+    const delBtn = editMode
+      ? `<button class="btn-ghost btn-danger" onclick="deletePos('${pos.id}')">✕</button>`
       : '';
+    const actions = `<td><div class="action-cell">
+        <button class="btn-ghost btn-edit" onclick="startEdit('${pos.id}')">Edit</button>
+        ${delBtn}
+      </div></td>`;
 
     return `<tr>
       <td>${posCell}</td>
@@ -951,8 +974,6 @@ function renderTable() {
       <td>${mv}</td>
       <td>${pnlCell}</td>
       <td>${pnlPctCell}</td>
-      <td>${dayCell}</td>
-      <td>${weightCell}</td>
       ${actions}
     </tr>`;
   }).join('');
@@ -1006,85 +1027,6 @@ function renderCharts() {
   });
 }
 
-// ── Trade event marker helpers ──────────────────────────────────────────────
-
-// Returns a 24×24 canvas with the favicon clipped to a circle.
-// Calls navLineChart.update('none') once the image loads.
-const _faviCache = {};
-function faviCanvas(domain) {
-  if (_faviCache[domain]) return _faviCache[domain];
-  const SZ = 24;
-  const c = document.createElement('canvas');
-  c.width = c.height = SZ;
-  const img = new Image();
-  img.onload = () => {
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, SZ, SZ);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(SZ / 2, SZ / 2, SZ / 2, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(img, 0, 0, SZ, SZ);
-    ctx.restore();
-    navLineChart?.update('none');
-  };
-  img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-  _faviCache[domain] = c;
-  return c;
-}
-
-// Build one scatter dataset per trade event (>$1k) to overlay on the NAV chart.
-// Events in the same month are stacked vertically above the line.
-function buildTradeMarkerDatasets(labels, navData) {
-  const byMonth = {};
-  for (const ev of TRADE_EVENTS) {
-    if (ev.openCost >= 1000) (byMonth[ev.month] ??= []).push(ev);
-  }
-  const YOFF = 2800; // SGD vertical gap between stacked markers
-  return Object.entries(byMonth).flatMap(([month, events]) => {
-    const idx = labels.indexOf(month);
-    if (idx < 0) return [];
-    const base = navData[idx];
-    return events.map((ev, k) => ({
-      label: ev.ticker,
-      _isMarker: true,
-      data: labels.map((_, i) => i === idx ? base + YOFF * (k + 1) : null),
-      pointStyle: labels.map((_, i) => i === idx ? faviCanvas(ev.domain) : 'circle'),
-      pointRadius: labels.map((_, i) => i === idx ? 12 : 0),
-      pointHoverRadius: labels.map((_, i) => i === idx ? 15 : 0),
-      showLine: false,
-      spanGaps: false,
-      order: 0,
-    }));
-  });
-}
-
-// Plugin: draws a dashed vertical line from each marker down to the NAV line.
-const tradeDropLinePlugin = {
-  id: 'tradeDropLines',
-  afterDraw(chart) {
-    const ctx = chart.ctx;
-    const mainMeta = chart.getDatasetMeta(0);
-    chart.data.datasets.forEach((ds, di) => {
-      if (!ds._isMarker) return;
-      const markerMeta = chart.getDatasetMeta(di);
-      markerMeta.data.forEach((pt, i) => {
-        if (ds.data[i] === null) return;
-        const anchor = mainMeta.data[i];
-        ctx.save();
-        ctx.strokeStyle = 'rgba(88,166,255,0.22)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 3]);
-        ctx.beginPath();
-        ctx.moveTo(pt.x, anchor.y);
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
-        ctx.restore();
-      });
-    });
-  },
-};
-
 function renderHistoryCharts() {
   const lineDefaults = {
     responsive: true,
@@ -1101,41 +1043,21 @@ function renderHistoryCharts() {
 
   // ── NAV line chart ──
   if (navLineChart) navLineChart.destroy();
-  const navLabels = MONTHLY_NAV.map(d => d.l);
-  const navData   = MONTHLY_NAV.map(d => d.n);
   navLineChart = new Chart(document.getElementById('nav-chart'), {
     type: 'line',
     data: {
-      labels: navLabels,
-      datasets: [
-        {
-          label: 'Portfolio (SGD)',
-          data: navData,
-          borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)',
-          pointRadius: 2, pointHoverRadius: 5, fill: true, tension: 0.3,
-          order: 1,
-        },
-        ...buildTradeMarkerDatasets(navLabels, navData),
-      ],
+      labels: MONTHLY_NAV.map(d => d.l),
+      datasets: [{
+        label: 'Portfolio (SGD)',
+        data: MONTHLY_NAV.map(d => d.n),
+        borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)',
+        pointRadius: 2, pointHoverRadius: 5, fill: true, tension: 0.3,
+      }],
     },
     options: {
       ...lineDefaults,
-      plugins: {
-        ...lineDefaults.plugins,
-        legend: {
-          labels: {
-            ...lineDefaults.plugins.legend.labels,
-            filter: (item, data) => !data.datasets[item.datasetIndex]?._isMarker,
-          },
-        },
-        tooltip: {
-          filter: item => !item.dataset._isMarker || item.raw !== null,
-          callbacks: {
-            label: c => c.dataset._isMarker
-              ? ` ↑ Opened: ${c.dataset.label}`
-              : ` SGD ${c.raw.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-          },
-        },
+      plugins: { ...lineDefaults.plugins,
+        tooltip: { callbacks: { label: c => ` SGD ${c.raw.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}` } },
       },
       scales: {
         ...lineDefaults.scales,
@@ -1143,7 +1065,6 @@ function renderHistoryCharts() {
           callback: v => 'S$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } },
       },
     },
-    plugins: [tradeDropLinePlugin],
   });
 
   // ── Performance index line chart ──
@@ -1202,8 +1123,10 @@ function renderClosedTrades() {
     const qtyLabel   = t.type === 'option'
       ? `${t.qty} contract${t.qty !== 1 ? 's' : ''} short`
       : fmtNum(t.qty, t.qty % 1 === 0 ? 0 : 2);
+    const rootTicker = t.ticker.split(' ')[0];
+    const fav = tickerFavicon(rootTicker);
     return `<tr>
-      <td><div class="sym">${t.ticker}</div><div class="sym-name">${t.name}</div></td>
+      <td><div class="sym" style="display:flex;align-items:center">${fav}${t.ticker}</div><div class="sym-name">${t.name}</div></td>
       <td>${qtyLabel}</td>
       <td>${costLabel}</td>
       <td>${closeLabel}</td>
@@ -1220,7 +1143,6 @@ function renderClosedTrades() {
 function setEditMode(on) {
   editMode = on;
   document.getElementById('add-btn').style.display   = on ? '' : 'none';
-  document.getElementById('th-actions').style.display= on ? '' : 'none';
   document.getElementById('edit-btn').textContent    = on ? '🔒 Lock' : '✎ Edit';
   if (!on) closeForm();
   renderTable();
@@ -1418,13 +1340,8 @@ function showStatus(msg, type) {
 
 function updateEditBtn() {
   const btn = document.getElementById('edit-btn');
-  if (cfg.token()) {
-    btn.style.display = '';
-    btn.onclick = () => setEditMode(!editMode);
-  } else {
-    btn.style.display = 'none';
-    setEditMode(false);
-  }
+  btn.style.display = '';
+  btn.onclick = () => setEditMode(!editMode);
 }
 
 function updateBanner() {
@@ -1468,7 +1385,9 @@ document.getElementById('refresh-btn').addEventListener('click', refreshPrices);
 
   renderAll();
 
-  if (positions.length) refreshPrices();
+  // Auto-refresh prices at most once per day
+  const lastRefresh = parseInt(localStorage.getItem('p_priceTs') || '0', 10);
+  if (positions.length && Date.now() - lastRefresh > 24 * 60 * 60 * 1000) refreshPrices();
 })();
 </script>
 </body>
