@@ -670,8 +670,11 @@ const PERF_INDEX = [
 // GitHub persistence
 // ═══════════════════════════════════════════════════════════════════
 async function ghLoad() {
-  const { user, repo, branch } = { user: cfg.user(), repo: cfg.repo(), branch: cfg.branch() };
-  if (!user || !repo) return null;
+  const { user, repo, branch } = {
+    user:   cfg.user()   || 'nicholasnge',
+    repo:   cfg.repo()   || 'portfolio',
+    branch: cfg.branch(),
+  };
   try {
     const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?ref=${branch}`;
     const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
@@ -1412,26 +1415,22 @@ document.getElementById('refresh-btn').addEventListener('click', refreshPrices);
   updateEditBtn();
   updateBanner();
 
-  // Load positions: try GitHub first, fall back to localStorage
-  let loaded = false;
-  if (cfg.user() && cfg.repo()) {
-    showStatus('Loading…', '');
-    const ghData = await ghLoad();
-    if (ghData) {
-      positions = ghData.positions || [];
-      cashUSD   = ghData.cashUSD   || 0;
-      restorePrices(ghData);
-      lsSave(ghData);
-      loaded = true;
-      showStatus('', '');
-    }
-  }
-  if (!loaded) {
+  // Load positions: always try GitHub first (public repo, no token needed), fall back to localStorage
+  showStatus('Loading…', '');
+  const ghData = await ghLoad();
+  if (ghData && ghData.positions?.length) {
+    positions = ghData.positions;
+    cashUSD   = ghData.cashUSD || 0;
+    restorePrices(ghData);
+    lsSave(ghData);
+    showStatus('', '');
+  } else {
     const lsData = lsLoad();
     const ls = lsData.positions || [];
     positions = ls.length ? ls : SEED_POSITIONS.map(p => ({ ...p }));
     cashUSD   = lsData.cashUSD || 0;
     restorePrices(lsData);
+    showStatus('', '');
   }
 
   renderAll();
