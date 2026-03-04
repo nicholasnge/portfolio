@@ -473,8 +473,9 @@ tbody td:first-child { text-align: left; }
           <th>Qty</th>
           <th>Avg Cost</th>
           <th>Close Price</th>
-          <th>Realized P&amp;L</th>
+          <th>P&amp;L</th>
           <th>P&amp;L %</th>
+          <th>Opened</th>
           <th>Closed</th>
         </tr>
       </thead>
@@ -591,16 +592,16 @@ const SEED_POSITIONS = [
 ];
 
 const CLOSED_TRADES = [
-  { ticker:'NVDA',      name:'NVIDIA Corp',                          type:'stock',  qty:136,   avgCost:124.01, closePrice:188.75, pnl:8803.79,  pnlPct:52.2,  closedAt:'Oct 2025', hof:true },
-  { ticker:'IMAX',      name:'IMAX Corp',                            type:'stock',  qty:1174,  avgCost:31.34,  closePrice:37.40,  pnl:7101.40,  pnlPct:19.3,  closedAt:'Dec 2025', hof:true },
-  { ticker:'IBKR',      name:'Interactive Brokers (incl. grants)',   type:'stock',  qty:95.49, avgCost:45.04,  closePrice:72.08,  pnl:2529.24,  pnlPct:58.8,  closedAt:'Mar 2025', hof:true },
-  { ticker:'VOO',       name:'Vanguard S&P 500 ETF',                 type:'stock',  qty:8.02,  avgCost:464.56, closePrice:636.89, pnl:1382.53,  pnlPct:37.1,  closedAt:'Sep 2025' },
-  { ticker:'VGT',       name:'Vanguard Info Tech ETF',               type:'stock',  qty:7.11,  avgCost:520.42, closePrice:609.50, pnl:633.32,   pnlPct:17.1,  closedAt:'Jan 2026' },
-  { ticker:'GOOG',      name:'Alphabet Inc',                         type:'stock',  qty:18,    avgCost:150.37, closePrice:180.87, pnl:549.00,   pnlPct:20.3,  closedAt:'Sep 2025' },
-  { ticker:'TKO',       name:'TKO Group Holdings',                   type:'stock',  qty:29,    avgCost:118.61, closePrice:133.25, pnl:424.56,   pnlPct:12.3,  closedAt:'Nov 2024', hof:true },
-  { ticker:'ADBE 250P', name:'Adobe $250 Put — 2 contracts short',   type:'option', qty:2,     avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  closedAt:'Jan 2026' },
-  { ticker:'DUOL 135C', name:'Duolingo $135 Call — short, expired',  type:'option', qty:1,     avgCost:2.53,   closePrice:0,      pnl:252.73,   pnlPct:99.9,  closedAt:'Feb 2026' },
-  { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',     type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  closedAt:'Feb 2026' },
+  { ticker:'NVDA',      name:'NVIDIA Corp',                          type:'stock',  qty:136,   avgCost:124.01, closePrice:188.75, pnl:8803.79,  pnlPct:52.2,  openedAt:'Jan 2024', closedAt:'Oct 2025', hof:true },
+  { ticker:'IMAX',      name:'IMAX Corp',                            type:'stock',  qty:1174,  avgCost:31.34,  closePrice:37.40,  pnl:7101.40,  pnlPct:19.3,  openedAt:'Oct 2025', closedAt:'Dec 2025', hof:true },
+  { ticker:'IBKR',      name:'Interactive Brokers (incl. grants)',   type:'stock',  qty:95.49, avgCost:45.04,  closePrice:72.08,  pnl:2529.24,  pnlPct:58.8,  openedAt:'Jan 2024', closedAt:'Mar 2025', hof:true },
+  { ticker:'VOO',       name:'Vanguard S&P 500 ETF',                 type:'stock',  qty:8.02,  avgCost:464.56, closePrice:636.89, pnl:1382.53,  pnlPct:37.1,  openedAt:'Feb 2024', closedAt:'Sep 2025' },
+  { ticker:'VGT',       name:'Vanguard Info Tech ETF',               type:'stock',  qty:7.11,  avgCost:520.42, closePrice:609.50, pnl:633.32,   pnlPct:17.1,  openedAt:'Feb 2024', closedAt:'Jan 2026' },
+  { ticker:'GOOG',      name:'Alphabet Inc',                         type:'stock',  qty:18,    avgCost:150.37, closePrice:180.87, pnl:549.00,   pnlPct:20.3,  openedAt:'Jun 2024', closedAt:'Sep 2025' },
+  { ticker:'TKO',       name:'TKO Group Holdings',                   type:'stock',  qty:29,    avgCost:118.61, closePrice:133.25, pnl:424.56,   pnlPct:12.3,  openedAt:'Aug 2024', closedAt:'Nov 2024', hof:true },
+  { ticker:'ADBE 250P', name:'Adobe $250 Put — 2 contracts short',   type:'option', qty:2,     avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'DUOL 135C', name:'Duolingo $135 Call — short, expired',  type:'option', qty:1,     avgCost:2.53,   closePrice:0,      pnl:252.73,   pnlPct:99.9,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'NFLX 75P',  name:'Netflix $75 Put — short, expired',     type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
 ];
 
 // Ticker → domain for favicon lookup
@@ -1190,6 +1191,7 @@ function renderClosedTrades() {
       <td>${closeLabel}</td>
       <td><span class="pnl-highlight pos">${fmtUSD(t.pnl)}</span></td>
       <td><span class="pnl-highlight pos">${t.type === 'option' && t.closePrice === 0 ? '+100%' : '+' + Math.round(t.pnlPct) + '%'}</span></td>
+      <td style="color:var(--muted)">${t.openedAt}</td>
       <td style="color:var(--muted)">${t.closedAt}</td>
     </tr>`;
   }).join('');
