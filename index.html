@@ -619,11 +619,17 @@ const TICKER_DOMAINS = {
   ORCL:  'oracle.com',
 };
 
+const TICKER_IMG_FILTER = {
+  TKO: 'invert(1)',
+};
+
 function tickerFavicon(ticker) {
-  const domain = TICKER_DOMAINS[ticker.toUpperCase()] || null;
+  const key    = ticker.toUpperCase();
+  const domain = TICKER_DOMAINS[key] || null;
   if (!domain) return '';
+  const filter = TICKER_IMG_FILTER[key] ? `filter:${TICKER_IMG_FILTER[key]};` : '';
   return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32"
-    style="width:18px;height:18px;border-radius:4px;vertical-align:middle;margin-right:7px;flex-shrink:0"
+    style="width:18px;height:18px;border-radius:4px;vertical-align:middle;margin-right:7px;flex-shrink:0;${filter}"
     onerror="this.style.display='none'">`;
 }
 
