@@ -781,7 +781,8 @@ async function refreshPrices() {
   if (!positions.length) return;
   setRefreshing(true);
 
-  const syms = [...new Set(positions.map(p => p.ticker))];
+  // For options, fetch the underlying ticker; stocks use their own ticker
+  const syms = [...new Set(positions.map(p => p.type === 'option' ? p.underlying : p.ticker))];
   const rows = await fetchQuotes(syms);
 
   for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
@@ -834,8 +835,9 @@ function multiplier(pos) { return pos.type === 'option' ? 100 : 1; }
 function qty(pos)         { return pos.type === 'option' ? pos.contracts : pos.shares; }
 
 function posStats(pos) {
-  const manual = manualPrices[pos.id] ?? null;
-  const q      = cache[pos.ticker]?.q;
+  const manual   = manualPrices[pos.id] ?? null;
+  const cacheKey = pos.type === 'option' ? pos.underlying : pos.ticker;
+  const q        = cache[cacheKey]?.q;
   const price  = manual !== null ? manual : q?.regularMarketPrice;
   if (price == null) return null;
   const mul    = multiplier(pos);
@@ -1300,7 +1302,8 @@ document.getElementById('save-pos-btn').addEventListener('click', async () => {
   await persistPositions();
 
   // Fetch price for new/updated position
-  fetchQuotes([pos.ticker]).then(rows => {
+  const fetchSym = pos.type === 'option' ? pos.underlying : pos.ticker;
+  fetchQuotes([fetchSym]).then(rows => {
     for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
     renderAll();
   });
