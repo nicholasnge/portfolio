@@ -781,8 +781,7 @@ async function refreshPrices() {
   if (!positions.length) return;
   setRefreshing(true);
 
-  // For options, fetch the underlying ticker; stocks use their own ticker
-  const syms = [...new Set(positions.map(p => p.type === 'option' ? p.underlying : p.ticker))];
+  const syms = [...new Set(positions.map(p => p.ticker))];
   const rows = await fetchQuotes(syms);
 
   for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
@@ -835,9 +834,8 @@ function multiplier(pos) { return pos.type === 'option' ? 100 : 1; }
 function qty(pos)         { return pos.type === 'option' ? pos.contracts : pos.shares; }
 
 function posStats(pos) {
-  const manual   = manualPrices[pos.id] ?? null;
-  const cacheKey = pos.type === 'option' ? pos.underlying : pos.ticker;
-  const q        = cache[cacheKey]?.q;
+  const manual = manualPrices[pos.id] ?? null;
+  const q      = cache[pos.ticker]?.q;
   const price  = manual !== null ? manual : q?.regularMarketPrice;
   if (price == null) return null;
   const mul    = multiplier(pos);
@@ -963,7 +961,6 @@ function renderTable() {
     }
 
     // Position cell with favicon
-    const isShort = pos.type === 'option' && pos.contracts < 0;
     let posCell;
     if (pos.type === 'option') {
       const fav = tickerFavicon(pos.underlying);
@@ -972,22 +969,22 @@ function renderTable() {
         : pos.optionType === 'C'
           ? `<span class="badge badge-call">CALL</span>`
           : `<span class="badge badge-put">PUT</span>`;
-      const shortBadge = isShort ? `<span class="badge badge-short">SHORT</span>` : '';
-      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.underlying}${dirBadge}${shortBadge}</div>
-                 <div class="sym-name">$${fmtNum(pos.strike)} · ${pos.expiry}</div>`;
+      const expDate = new Date(pos.expiry + 'T00:00:00')
+        .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.underlying}${dirBadge}</div>
+                 <div class="sym-name">$${fmtNum(pos.strike)} · ${expDate}</div>`;
     } else {
       const fav = tickerFavicon(pos.ticker);
       posCell = `<div class="sym" style="display:flex;align-items:center">${fav}${pos.ticker}</div>
                  <div class="sym-name">${pos.name || ''}</div>`;
     }
 
-    const absCt = Math.abs(pos.contracts || 0);
     const qtyLabel = pos.type === 'option'
-      ? `${absCt} contract${absCt !== 1 ? 's' : ''}`
+      ? String(pos.contracts)
       : fmtNum(pos.shares, pos.shares % 1 === 0 ? 0 : 4);
 
     const costLabel = pos.type === 'option'
-      ? `$${fmtNum(pos.avgCost)}<div style="font-size:10px;color:var(--muted)">× ${n}×100</div>`
+      ? '$' + fmtNum(pos.avgCost)
       : '$' + fmtNum(pos.avgCost);
 
     const weightCell = (s && totalValue)
@@ -1302,8 +1299,7 @@ document.getElementById('save-pos-btn').addEventListener('click', async () => {
   await persistPositions();
 
   // Fetch price for new/updated position
-  const fetchSym = pos.type === 'option' ? pos.underlying : pos.ticker;
-  fetchQuotes([fetchSym]).then(rows => {
+  fetchQuotes([pos.ticker]).then(rows => {
     for (const q of rows) cache[q.symbol] = { q, ts: Date.now() };
     renderAll();
   });
