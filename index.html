@@ -670,18 +670,15 @@ const PERF_INDEX = [
 // GitHub persistence
 // ═══════════════════════════════════════════════════════════════════
 async function ghLoad() {
-  const { user, repo, branch } = {
-    user:   cfg.user()   || 'nicholasnge',
-    repo:   cfg.repo()   || 'portfolio',
-    branch: cfg.branch(),
-  };
+  const user   = cfg.user()   || 'nicholasnge';
+  const repo   = cfg.repo()   || 'portfolio';
+  const branch = cfg.branch();
   try {
-    const url = `https://api.github.com/repos/${user}/${repo}/contents/data.json?ref=${branch}`;
-    const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
-    if (res.status === 404) return { positions: [] };
+    // Use raw URL — no auth needed, no rate limits, no base64 decode
+    const url = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/data.json`;
+    const res = await fetch(url);
     if (!res.ok) return null;
-    const j = await res.json();
-    return JSON.parse(atob(j.content.replace(/\n/g, '')));
+    return await res.json();
   } catch { return null; }
 }
 
