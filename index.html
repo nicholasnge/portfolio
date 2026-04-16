@@ -591,6 +591,8 @@ let cache      = {};   // ticker → { q: quoteObj, ts: timestamp }
 let editMode   = false;
 let manualPrices = {};  // posId → manually entered price
 let cashUSD    = 0;
+let cashSGD    = 0;
+let usdsgdRate = 1.271; // SGD per 1 USD
 let editingId  = null;
 let formTab    = 'stock';
 let allocChart   = null;
@@ -759,7 +761,7 @@ function buildDataObj() {
       prices[sym] = { price: entry.q.regularMarketPrice, ts: entry.ts };
     }
   }
-  return { positions, prices, cashUSD, updatedAt: new Date().toISOString() };
+  return { positions, prices, cashUSD, cashSGD, usdsgdRate, updatedAt: new Date().toISOString() };
 }
 
 // Restore prices from a loaded data object into the in-memory cache
@@ -904,6 +906,8 @@ function portfolioTotals() {
     totalCost  += s.cost;
   }
   if (cashUSD) { totalValue += cashUSD; totalCost += cashUSD; hasPrice = true; }
+  const cashSGDusd = cashSGD && usdsgdRate ? cashSGD / usdsgdRate : 0;
+  if (cashSGDusd) { totalValue += cashSGDusd; totalCost += cashSGDusd; hasPrice = true; }
   const totalPnl    = totalValue - totalCost;
   const totalPnlPct = totalCost  > 0 ? (totalPnl / totalCost) * 100 : 0;
   return { totalValue, totalCost, totalPnl, totalPnlPct, hasPrice };
@@ -914,6 +918,18 @@ function setCash(input) {
   cashUSD = !isNaN(val) ? val : 0;
   renderCards();
   persistPositions();
+}
+
+function setCashSGD(input) {
+  const val = parseFloat(input.value);
+  cashSGD = !isNaN(val) ? val : 0;
+  renderCards();
+  persistPositions();
+}
+
+function setUsdSgd(input) {
+  const val = parseFloat(input.value);
+  if (!isNaN(val) && val > 0) { usdsgdRate = val; renderCards(); persistPositions(); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1047,7 +1063,7 @@ function renderTable() {
     </tr>`;
   }).join('');
 
-  // Cash row
+  // Cash rows
   const cashValueCell = editMode
     ? `<input type="number" class="price-input" id="cash-input" value="${cashUSD || ''}"
         placeholder="0.00" step="0.01" oninput="setCash(this)">`
@@ -1059,6 +1075,26 @@ function renderTable() {
     <td>—</td><td>—</td>
     <td>${cashValueCell}</td>
     <td>${cashWeight}</td>
+    <td></td>
+  </tr>`;
+
+  const cashSGDusd = cashSGD && usdsgdRate ? cashSGD / usdsgdRate : 0;
+  const sgdDisplay = editMode
+    ? `<input type="number" class="price-input" id="cashsgd-input" value="${cashSGD || ''}"
+        placeholder="0.00" step="0.01" oninput="setCashSGD(this)">`
+    : (cashSGD ? 'S$' + cashSGD.toLocaleString('en-US', {maximumFractionDigits: 0})
+               + (cashSGDusd ? ` <span style="color:var(--muted);font-size:11px">(≈$${cashSGDusd.toLocaleString('en-US', {maximumFractionDigits: 0})})</span>` : '')
+               : '—');
+  const sgdRateCell = editMode
+    ? `<span style="color:var(--muted);font-size:11px">rate: <input type="number" class="price-input" style="width:55px;display:inline-block" value="${usdsgdRate}" step="0.001" oninput="setUsdSgd(this)"></span>`
+    : `<span style="color:var(--muted);font-size:11px">1 USD = ${usdsgdRate} SGD</span>`;
+  const sgdWeight = (cashSGDusd && totalValue) ? fmtNum(cashSGDusd / totalValue * 100, 1) + '%' : '—';
+  tbody.innerHTML += `<tr>
+    <td><div class="sym">S$ Cash (SGD)</div><div class="sym-name">${sgdRateCell}</div></td>
+    <td>—</td><td>—</td><td>—</td>
+    <td>—</td><td>—</td>
+    <td>${sgdDisplay}</td>
+    <td>${sgdWeight}</td>
     <td></td>
   </tr>`;
 }
@@ -1462,16 +1498,20 @@ document.getElementById('refresh-btn').addEventListener('click', refreshPrices);
   showStatus('Loading…', '');
   const ghData = await ghLoad();
   if (ghData && ghData.positions?.length) {
-    positions = ghData.positions;
-    cashUSD   = ghData.cashUSD || 0;
+    positions  = ghData.positions;
+    cashUSD    = ghData.cashUSD    || 0;
+    cashSGD    = ghData.cashSGD    || 0;
+    usdsgdRate = ghData.usdsgdRate || 1.271;
     restorePrices(ghData);
     lsSave(ghData);
     showStatus('', '');
   } else {
     const lsData = lsLoad();
     const ls = lsData.positions || [];
-    positions = ls.length ? ls : SEED_POSITIONS.map(p => ({ ...p }));
-    cashUSD   = lsData.cashUSD || 0;
+    positions  = ls.length ? ls : SEED_POSITIONS.map(p => ({ ...p }));
+    cashUSD    = lsData.cashUSD    || 0;
+    cashSGD    = lsData.cashSGD    || 0;
+    usdsgdRate = lsData.usdsgdRate || 1.271;
     restorePrices(lsData);
     showStatus('', '');
   }

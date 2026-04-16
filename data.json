@@ -52,5 +52,7 @@
     }
   },
   "cashUSD": 44027.50,
+  "cashSGD": 3500.20,
+  "usdsgdRate": 1.271,
   "updatedAt": "2026-04-16T12:01:45.000Z"
 }
