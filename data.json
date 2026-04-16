@@ -2,76 +2,55 @@
   "positions": [
     {
       "type": "stock",
-      "ticker": "META",
-      "name": "Meta Platforms",
-      "shares": 71.9,
-      "avgCost": 657.9,
+      "ticker": "IMAX",
+      "name": "IMAX Corp",
+      "shares": 1500,
+      "avgCost": 36.929511433,
       "id": "seed1"
     },
     {
       "type": "stock",
-      "ticker": "NFLX",
-      "name": "Netflix Inc.",
-      "shares": 200,
-      "avgCost": 83.18,
+      "ticker": "META",
+      "name": "Meta Platforms",
+      "shares": 160,
+      "avgCost": 598.418473863,
       "id": "seed2"
     },
     {
-      "type": "option",
-      "ticker": "META260821P00600000",
-      "underlying": "META",
-      "optionType": "P",
-      "strike": 600,
-      "expiry": "2026-08-21",
-      "contracts": -1,
-      "avgCost": 42.75,
+      "type": "stock",
+      "ticker": "SPOT",
+      "name": "Spotify Technology SA",
+      "shares": -30,
+      "avgCost": 490.263454133,
       "id": "seed3"
     },
     {
-      "type": "option",
-      "ticker": "ORCL260313P00130000",
-      "underlying": "ORCL",
-      "optionType": "P",
-      "strike": 130,
-      "expiry": "2026-03-13",
-      "contracts": -4,
-      "avgCost": 4.26,
+      "type": "stock",
+      "ticker": "VOO",
+      "name": "Vanguard S&P 500 ETF",
+      "shares": -200,
+      "avgCost": 595.03050261,
       "id": "seed4"
-    },
-    {
-      "type": "option",
-      "ticker": "SPOT260402C00580000",
-      "underlying": "SPOT",
-      "optionType": "C",
-      "strike": 580,
-      "expiry": "2026-04-02",
-      "contracts": -1,
-      "avgCost": 11.65,
-      "id": "cm6nk4di"
     }
   ],
   "prices": {
+    "IMAX": {
+      "price": 37.06,
+      "ts": 1776283200000
+    },
     "META": {
-      "price": 647.39,
-      "ts": 1773098331146
+      "price": 671.58,
+      "ts": 1776283200000
     },
-    "META260821P00600000": {
-      "price": 46.15,
-      "ts": 1773098331146
+    "SPOT": {
+      "price": 531.17,
+      "ts": 1776283200000
     },
-    "SPOT260402C00580000": {
-      "price": 11.65,
-      "ts": 1772798425271
-    },
-    "NFLX": {
-      "price": 98.32,
-      "ts": 1773098331146
-    },
-    "ORCL260313P00130000": {
-      "price": 1.45,
-      "ts": 1773098331146
+    "VOO": {
+      "price": 643.45,
+      "ts": 1776283200000
     }
   },
-  "cashUSD": 151.57,
-  "updatedAt": "2026-03-09T23:18:51.146Z"
+  "cashUSD": 44027.50,
+  "updatedAt": "2026-04-16T12:01:45.000Z"
 }
