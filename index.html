@@ -604,25 +604,28 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 // Hard-coded seed data (from IBKR statements)
 // ═══════════════════════════════════════════════════════════════════
 const SEED_POSITIONS = [
-  { id:'seed1', type:'stock',  ticker:'META',  name:'Meta Platforms',  shares:71.9,  avgCost:657.90 },
-  { id:'seed2', type:'stock',  ticker:'NFLX',  name:'Netflix Inc.',    shares:200,   avgCost:83.18 },
-  { id:'seed3', type:'option', ticker:'META260821P00600000',
-    underlying:'META', optionType:'P', strike:600, expiry:'2026-08-21', contracts:-1, avgCost:42.75 },
-  { id:'seed4', type:'option', ticker:'ORCL260313P00130000',
-    underlying:'ORCL', optionType:'P', strike:130, expiry:'2026-03-13', contracts:-2, avgCost:4.24 },
+  { id:'seed1', type:'stock', ticker:'IMAX', name:'IMAX Corp',              shares:1500, avgCost:36.929511433 },
+  { id:'seed2', type:'stock', ticker:'META', name:'Meta Platforms',         shares:160,  avgCost:598.418473863 },
+  { id:'seed3', type:'stock', ticker:'SPOT', name:'Spotify Technology SA',  shares:-30,  avgCost:490.263454133 },
+  { id:'seed4', type:'stock', ticker:'VOO',  name:'Vanguard S&P 500 ETF',   shares:-200, avgCost:595.03050261 },
 ];
 
 const CLOSED_TRADES = [
   { ticker:'NVDA',      name:'NVIDIA Corp',                          type:'stock',  qty:136,   avgCost:124.01, closePrice:188.75, pnl:8803.79,  pnlPct:52.2,  openedAt:'Jan 2024', closedAt:'Oct 2025', hof:true },
   { ticker:'IMAX',      name:'IMAX Corp',                            type:'stock',  qty:1174,  avgCost:31.34,  closePrice:37.40,  pnl:7101.40,  pnlPct:19.3,  openedAt:'Oct 2025', closedAt:'Dec 2025', hof:true },
   { ticker:'IBKR',      name:'Interactive Brokers (incl. grants)',   type:'stock',  qty:95.49, avgCost:45.04,  closePrice:72.08,  pnl:2529.24,  pnlPct:58.8,  openedAt:'Jan 2024', closedAt:'Mar 2025', hof:true },
-  { ticker:'VOO',       name:'Vanguard S&P 500 ETF',                 type:'stock',  qty:8.02,  avgCost:464.56, closePrice:636.89, pnl:1382.53,  pnlPct:37.1,  openedAt:'Feb 2024', closedAt:'Sep 2025' },
+  { ticker:'VOO',       name:'Vanguard S&P 500 ETF',                 type:'stock',  qty:8.02,  avgCost:464.56, closePrice:636.89, pnl:1382.53,  pnlPct:37.1,  openedAt:'Feb 2024', closedAt:'Jan 2026' },
   { ticker:'VGT',       name:'Vanguard Info Tech ETF',               type:'stock',  qty:7.11,  avgCost:520.42, closePrice:609.50, pnl:633.32,   pnlPct:17.1,  openedAt:'Feb 2024', closedAt:'Jan 2026' },
   { ticker:'GOOG',      name:'Alphabet Inc',                         type:'stock',  qty:18,    avgCost:150.37, closePrice:180.87, pnl:549.00,   pnlPct:20.3,  openedAt:'Jun 2024', closedAt:'Sep 2025' },
   { ticker:'TKO',       name:'TKO Group Holdings',                   type:'stock',  qty:29,    avgCost:118.61, closePrice:133.25, pnl:424.56,   pnlPct:12.3,  openedAt:'Aug 2024', closedAt:'Nov 2024', hof:true },
-  { ticker:'ADBE 250P', name:'Adobe · $250 Put',    type:'option', qty:2,     avgCost:14.87,  closePrice:12.90,  pnl:389.95,   pnlPct:13.1,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
-  { ticker:'DUOL 135C', name:'Duolingo · $135 Call', type:'option', qty:1,     avgCost:2.53,   closePrice:0,      pnl:252.73,   pnlPct:99.9,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
-  { ticker:'NFLX 75P',  name:'Netflix · $75 Put',   type:'option', qty:1,     avgCost:1.16,   closePrice:0,      pnl:114.85,   pnlPct:99.0,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'NFLX',      name:'Netflix Inc.',                         type:'stock',  qty:670,   avgCost:90.99,  closePrice:93.10,  pnl:2301.20,  pnlPct:3.8,   openedAt:'Jan 2026', closedAt:'Mar 2026' },
+  { ticker:'ADBE 250P', name:'Adobe · $250 Put',    type:'option', qty:2,     avgCost:14.87,  closePrice:12.90, pnl:389.95,   pnlPct:13.1,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'DUOL 135C', name:'Duolingo · $135 Call', type:'option', qty:1,     avgCost:2.53,   closePrice:0,     pnl:252.73,   pnlPct:99.9,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'NFLX 75P',  name:'Netflix · $75 Put',   type:'option', qty:1,     avgCost:1.16,   closePrice:0,     pnl:114.85,   pnlPct:99.0,  openedAt:'Feb 2026', closedAt:'Feb 2026' },
+  { ticker:'META 600P', name:'Meta · $600 Put',      type:'option', qty:1,     avgCost:42.75,  closePrice:34.00, pnl:873.02,   pnlPct:20.4,  openedAt:'Feb 2026', closedAt:'Apr 2026' },
+  { ticker:'JPM 275P',  name:'JPMorgan · $275 Put',  type:'option', qty:2,     avgCost:1.20,   closePrice:0,     pnl:238.47,   pnlPct:99.4,  openedAt:'Mar 2026', closedAt:'Mar 2026' },
+  { ticker:'ORCL 130P', name:'Oracle · $130 Put',    type:'option', qty:4,     avgCost:4.27,   closePrice:0,     pnl:1704.03,  pnlPct:99.9,  openedAt:'Mar 2026', closedAt:'Mar 2026' },
+  { ticker:'SPOT 580C', name:'Spotify · $580 Call',  type:'option', qty:1,     avgCost:11.65,  closePrice:0.30,  pnl:1132.98,  pnlPct:97.3,  openedAt:'Mar 2026', closedAt:'Mar 2026' },
 ];
 
 // Ticker → domain for favicon lookup
@@ -639,6 +642,8 @@ const TICKER_DOMAINS = {
   ADBE:  'adobe.com',
   DUOL:  'duolingo.com',
   ORCL:  'oracle.com',
+  SPOT:  'spotify.com',
+  JPM:   'jpmorganchase.com',
 };
 
 const TICKER_IMG_FILTER = {
